@@ -27,10 +27,11 @@ private:
     Node* createNode(const T& value, Node* next = nullptr)
     {
         Node* node = nullptr;
-        try { node = new Node(value, next); }
-        catch (...) 
+        try { 
+            node = new Node(value, next); 
+        } catch (...) 
         { 
-            throw MemoryAllocationException("LinkedList: node allocation failed"); 
+            throw MemoryAllocationException(); 
         }
         return node;
     }
@@ -59,35 +60,38 @@ private:
         }
     }
 
-    const Node* const* getNodePtrAt(int index) const
+    const Node* getNodeAt(int index) const
     {
-        if (index < 0 || index > length)
+        if (index < 0 || index >= length)
         {
-            throw IndexOutOfRangeException("LinkedList: index out of range");
+            throw IndexOutOfRangeException();
         }
 
-        const Node* const* current = reinterpret_cast<const Node* const*>(&head);
-
+        const Node* current = head;
         for (int i = 0; i < index; ++i)
         {
-            current = reinterpret_cast<const Node* const*>(&((*current)->next));
+            current = current->next;
         }
         return current;
     }
 
     Node** getNodePtrAt(int index)
     {
-        return const_cast<Node**>(static_cast<const LinkedList<T>&>(*this).getNodePtrAt(index));
-    }
-
-    const Node* getNodeAt(int index) const 
-    { 
-        return *getNodePtrAt(index); 
+        if (index < 0 || index > length)
+        {
+            throw IndexOutOfRangeException();
+        }
+        Node** current = &head;
+        for (int i = 0; i < index; ++i)
+        {
+            current = &((*current)->next);
+        }
+        return current;
     }
 
     Node* getNodeAt(int index)       
     { 
-        return *getNodePtrAt(index); 
+        return const_cast<Node*>(static_cast<const LinkedList<T>&>(*this).getNodeAt(index));
     }
 
 public:
@@ -95,12 +99,12 @@ public:
     {
         if (count < 0) 
         {
-            throw InvalidArgumentException("Count cannot be negative");
+            throw InvalidArgumentException();
         }
 
         if (count > 0 && items == nullptr) 
         {
-            throw InvalidArgumentException("Null pointer provided");
+            throw InvalidArgumentException();
         }
         
         for (int i = 0; i < count; ++i) 
@@ -135,7 +139,7 @@ public:
     {
         if (head == nullptr) 
         {
-            throw EmptyStructureException("LinkedList is empty");
+            throw EmptyStructureException();
         }
         return getNodeAt(0)->data;
     }
@@ -149,7 +153,7 @@ public:
     {
         if (tail == nullptr) 
         {
-            throw EmptyStructureException("LinkedList is empty");
+            throw EmptyStructureException();
         }
         return tail->data;  
     }
@@ -173,7 +177,7 @@ public:
     {
         if (startIndex < 0 || endIndex >= length || startIndex > endIndex)
         {
-            throw IndexOutOfRangeException("LinkedList::GetSubList — index out of range");
+            throw IndexOutOfRangeException();
         }
 
         LinkedList<T> result;
@@ -205,7 +209,7 @@ public:
     {
         if (index < 0 || index > length)
         {
-            throw IndexOutOfRangeException("LinkedList::InsertAt — index out of range");
+            throw IndexOutOfRangeException();
         }
 
         Node** current = getNodePtrAt(index);
@@ -224,7 +228,7 @@ public:
     {
         if (index < 0 || index >= length)
         {
-            throw IndexOutOfRangeException("LinkedList::RemoveAt — index out of range");
+            throw IndexOutOfRangeException();
         }
         Node** current = getNodePtrAt(index);
 
@@ -290,7 +294,7 @@ public:
     {
         if (!current) 
         {
-            throw IndexOutOfRangeException("Iterator out of range");
+            throw IndexOutOfRangeException();
         }
         return current->data;
     }
