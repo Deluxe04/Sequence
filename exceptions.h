@@ -52,10 +52,8 @@ public:
     explicit InvalidOperationException(const std::string& msg = "Invalid operation")
         : BaseLabException(msg) {}
 };
-#define THROW_DETAILED_INDEX_ERROR(index, min, max, method) \
-    throw DetailedIndexOutOfRangeException(index, min, max, method, __FILE__, __LINE__)
 
-    class ObjectDisposedException : public BaseLabException
+class ObjectDisposedException : public BaseLabException
 {
 public:
     explicit ObjectDisposedException(const std::string& msg = "Object has been disposed")
