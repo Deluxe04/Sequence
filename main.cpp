@@ -1,531 +1,642 @@
 #include <iostream>
+#include <string>
+#include <sstream>
+
+#include "dynamic_array.h"
+#include "linked_list.h"
 #include "array_sequence.h"
 #include "list_sequence.h"
 #include "bit_sequence.h"
+#include "adaptive_sequence.h"
+#include "builder.h"
 
-template <typename T>
-int readArray(T* arr, int maxSize) 
+// Вспомогательные функции
+template <class T>
+int readArray(T* arr, int maxSize)
 {
-    int count = 0;          
-    T value;                
-    
-    while (count < maxSize && std::cin >> value) 
-    {
-        arr[count++] = value;   
-    }
-    
-    std::cin.clear();
-    std::cin.ignore(10000, '\n');
-    
-    return count;  
-}
+    std::string line;
+    std::getline(std::cin, line);
+    std::istringstream iss(line);
 
-//Специ-я для Bit
-template <>
-int readArray<Bit>(Bit* arr, int maxSize) 
-{
     int count = 0;
-    int val;                   
-    
-    while (count < maxSize && std::cin >> val) 
+    std::string token;
+
+    while (count < maxSize && iss >> token)
     {
-        
-        arr[count++] = Bit(val != 0);
+        std::istringstream tokenStream(token);
+        T value;
+        char leftover;
+        //Если прочиталось значение и после него нет лишних символов — берём
+        if (tokenStream >> value && !(tokenStream >> leftover))
+            arr[count++] = value;
     }
-    
-    std::cin.clear();
-    std::cin.ignore(10000, '\n');
     return count;
 }
 
-// Печатает последовательность
-template <typename T>
-void printSequence(const Sequence<T>* seq, const char* name) 
+template <>
+int readArray<Bit>(Bit* arr, int maxSize)
 {
-    if (!seq) 
-    {
-        std::cout << name << " is null." << std::endl;
-        return;
-    }
+    std::string line;
+    std::getline(std::cin, line);
+    std::istringstream iss(line);
 
-    std::cout << name << " (len=" << seq->GetLength() << "): [";
-    
-    for (int i = 0; i < seq->GetLength(); ++i) 
+    int count = 0;
+    int val;
+
+    while (count < maxSize && iss >> val)
     {
-        if (i > 0) std::cout << ", ";   
-        std::cout << seq->Get(i);       
+        arr[count++] = Bit(val != 0);
     }
-    
-    std::cout << "]" << std::endl;
+    return count;
 }
 
-//для Bit
-template <>
-void printSequence<Bit>(const Sequence<Bit>* seq, const char* name) 
+bool readInt(int& val)
+{
+    if (!(std::cin >> val))
+    {
+        std::cin.clear();
+        std::cin.ignore(10000, '\n');
+        std::cout << "Ошибка: введите целое число\n";
+
+        val = -1; 
+        return false;
+    }
+    std::cin.ignore(10000, '\n');
+    return true;
+}
+
+template <class T>
+void printSequence(const Sequence<T>* seq, const char* name)
 {
     if (!seq) 
-    {
-        std::cout << name << " is null." << std::endl;
-        return;
+    { 
+        std::cout << name << " is null\n"; 
+        return; 
     }
-    
     std::cout << name << " (len=" << seq->GetLength() << "): [";
-    for (int i = 0; i < seq->GetLength(); ++i) 
+    for (int i = 0; i < seq->GetLength(); ++i)
+    {
+        if (i > 0) std::cout << ", ";
+        std::cout << seq->Get(i);
+    }
+    std::cout << "]\n";
+}
+
+template <>
+void printSequence<Bit>(const Sequence<Bit>* seq, const char* name)
+{
+    if (!seq) 
+    { 
+        std::cout << name << " is null\n"; 
+        return; 
+    }
+    std::cout << name << " (len=" << seq->GetLength() << "): [";
+    for (int i = 0; i < seq->GetLength(); ++i)
     {
         if (i > 0) std::cout << ", ";
         std::cout << (seq->Get(i) ? '1' : '0');
     }
-    std::cout << "]" << std::endl;
+    std::cout << "]\n";
 }
 
 template <>
-void printSequence<std::string>(const Sequence<std::string>* seq, const char* name) 
+void printSequence<std::string>(const Sequence<std::string>* seq, const char* name)
 {
     if (!seq) 
-    {
-        std::cout << name << " is null." << std::endl;
-        return;
+    { 
+        std::cout << name << " is null\n"; 
+        return; 
     }
-    
     std::cout << name << " (len=" << seq->GetLength() << "): [";
-    for (int i = 0; i < seq->GetLength(); ++i) 
+    for (int i = 0; i < seq->GetLength(); ++i)
     {
         if (i > 0) std::cout << ", ";
-        std::cout << "\"" << seq->Get(i) << "\"";  
+        std::cout << "\"" << seq->Get(i) << "\"";
     }
-    std::cout << "]" << std::endl;
+    std::cout << "]\n";
 }
 
-void printMenu() 
+//Операции над последовательностью
+template <class T>
+void opGet(Sequence<T>* seq)
 {
-    std::cout << "\n===== Sequence Test Menu =====" << std::endl;
-    std::cout << "=== INTEGER SEQUENCE ===" << std::endl;
-    std::cout << "1. Create Mutable ArraySequence<int>" << std::endl;
-    std::cout << "2. Create Immutable ArraySequence<int>" << std::endl;
-    std::cout << "3. Create Mutable ListSequence<int>" << std::endl;
-    std::cout << "4. Create Immutable ListSequence<int>" << std::endl;
-    std::cout << "=== STRING SEQUENCE ===" << std::endl;
-    std::cout << "5. Create Mutable ArraySequence<string>" << std::endl;
-    std::cout << "6. Create Immutable ArraySequence<string>" << std::endl;
-    std::cout << "7. Create Mutable ListSequence<string>" << std::endl;
-    std::cout << "8. Create Immutable ListSequence<string>" << std::endl;
-    std::cout << "=== OPERATIONS ===" << std::endl;
-    std::cout << "9. Print current sequence" << std::endl;
-    std::cout << "10. Get element by index" << std::endl;
-    std::cout << "11. Get length" << std::endl;
-    std::cout << "12. Append element" << std::endl;
-    std::cout << "13. Prepend element" << std::endl;
-    std::cout << "14. Insert at index" << std::endl;
-    std::cout << "15. Remove at index" << std::endl;
-    std::cout << "16. Get subsequence" << std::endl;
-    std::cout << "17. Concat with another sequence" << std::endl;
-    std::cout << "18. Test BitSequence" << std::endl;
-    std::cout << "0. Exit" << std::endl;
-    std::cout << "Choose option: ";
+    if (!seq) 
+    { 
+        std::cout << "Последовательность не создана\n";
+        return; 
+    }
+    int idx;
+    std::cout << "Введите индекс: ";
+
+    if (!readInt(idx)) 
+    {
+        return;
+    }
+    if (idx < 0 || idx >= seq->GetLength())
+    {
+        std::cout << "Ошибка: индекс вне диапазона [0, " << seq->GetLength()-1 << "]\n";
+    } else
+    {
+        std::cout << "Get(" << idx << ") = " << seq->Get(idx) << "\n";
+    }
 }
 
-// Показывает работу методов на int
-void demonstrateIntSequence() 
+template <class T>
+void opAppend(Sequence<T>*& seq)
 {
-    std::cout << "\n=== DEMONSTRATION: INTEGER SEQUENCE ===\n" << std::endl;
-    
+    if (!seq) 
+    { 
+        std::cout << "Последовательность не создана\n"; 
+        return; 
+    }
+    T val;
+    std::cout << "Введите значение: ";
+    std::cin >> val;
+    std::cin.ignore(10000, '\n');
+
+    Sequence<T>* r = seq->Append(val);
+    if (r != seq) 
+    { 
+        delete seq; seq = r; 
+    }
+    printSequence<T>(seq, "После Append");
+}
+
+template <class T>
+void opPrepend(Sequence<T>*& seq)
+{
+    if (!seq) 
+    { 
+        std::cout << "Последовательность не создана\n"; 
+        return; 
+    }
+    T val;
+    std::cout << "Введите значение: ";
+    std::cin >> val;
+    std::cin.ignore(10000, '\n');
+
+    Sequence<T>* r = seq->Prepend(val);
+    if (r != seq) 
+    { 
+        delete seq; seq = r; 
+    }
+    printSequence<T>(seq, "После Prepend");
+}
+
+template <class T>
+void opInsertAt(Sequence<T>*& seq)
+{
+    if (!seq) 
+    { 
+        std::cout << "Последовательность не создана\n"; 
+        return; 
+    }
+    int idx;
+    std::cout << "Введите индекс: ";
+
+    if (!readInt(idx)) 
+    {
+        return;
+    }
+    if (idx < 0 || idx > seq->GetLength())
+    {
+        std::cout << "Ошибка: индекс вне диапазона [0, " << seq->GetLength() << "].\n";
+        return;
+    }
+    T val;
+    std::cout << "Введите значение: ";
+    std::cin >> val;
+    std::cin.ignore(10000, '\n');
+    Sequence<T>* r = seq->InsertAt(val, idx);
+    if (r != seq) 
+    { 
+        delete seq; seq = r; 
+    }
+    printSequence<T>(seq, "После InsertAt");
+}
+
+template <class T>
+void opRemoveAt(Sequence<T>*& seq)
+{
+    if (!seq) 
+    { 
+        std::cout << "Последовательность не создана\n"; 
+        return; 
+    }
+    int idx;
+    std::cout << "Введите индекс: ";
+
+    if (!readInt(idx)) 
+    {
+        return;
+    }
+    if (idx < 0 || idx >= seq->GetLength())
+    {
+        std::cout << "Ошибка: индекс вне диапазона [0, " << seq->GetLength()-1 << "]\n";
+        return;
+    }
+    Sequence<T>* r = seq->RemoveAt(idx);
+    if (r != seq) 
+    { 
+        delete seq; seq = r; 
+    }
+    printSequence<T>(seq, "После RemoveAt");
+}
+
+template <class T>
+void opSubsequence(Sequence<T>* seq)
+{
+    if (!seq) 
+    { 
+        std::cout << "Последовательность не создана\n"; 
+        return; 
+    }
+    int start, end;
+    std::cout << "Введите startIndex endIndex: ";
+    std::cin >> start >> end;
+    std::cin.ignore(10000, '\n');
+
+    if (start < 0 || end < start)
+    {
+        std::cout << "Ошибка: нужно 0 <= start <= end\n";
+        return;
+    }
+    if (end >= seq->GetLength())
+    {
+        std::cout << "Ошибка: end вне диапазона [0, " << seq->GetLength()-1 << "]\n";
+        return;
+    }
+
+    Sequence<T>* sub = seq->GetSubsequence(start, end);
+    printSequence<T>(sub, "Подпоследовательность");
+    delete sub;
+}
+
+template <class T>
+void opConcat(Sequence<T>*& seq)
+{
+    if (!seq) 
+    { 
+        std::cout << "Последовательность не создана\n"; 
+        return; 
+    }
+    std::cout << "Введите элементы второй последовательности: ";
+    T temp[100];
+    int count = readArray<T>(temp, 100);
+
+    if (count == 0) 
+    { 
+        std::cout << "Ошибка: не введено ни одного элемента\n"; 
+        return; 
+    }
+
+    MutableArraySequence<T>* other = new MutableArraySequence<T>(temp, count);
+    Sequence<T>* r = seq->Concat(other);
+    if (r != seq) 
+    { 
+        delete seq; seq = r;
+    }
+    delete other;
+    printSequence<T>(seq, "После Concat");
+    return;
+}
+
+//Меню
+void printMenu()
+{
+    std::cout << "\n===== Sequence Menu =====\n"
+              << "--- Создание (int) ---\n"
+              << "1. MutableArraySequence<int>\n"
+              << "2. ImmutableArraySequence<int>\n"
+              << "3. MutableListSequence<int>\n"
+              << "4. ImmutableListSequence<int>\n"
+              << "--- Создание (string) ---\n"
+              << "5. MutableArraySequence<string>\n"
+              << "6. ImmutableArraySequence<string>\n"
+              << "7. MutableListSequence<string>\n"
+              << "8. ImmutableListSequence<string>\n"
+              << "--- Операции ---\n"
+              << "9.  Напечатать текущую\n"
+              << "10. Get\n"
+              << "11. GetLength\n"
+              << "12. Append\n"
+              << "13. Prepend\n"
+              << "14. InsertAt\n"
+              << "15. RemoveAt\n"
+              << "16. GetSubsequence\n"
+              << "17. Concat\n"
+              << "18. BitSequence (NOT/AND/OR/XOR)\n"
+              << "19. AdaptiveSequence\n"
+              << "0.  Выход\n"
+              << "Выбор: ";
+}
+
+//Демонстрации
+template <class T>
+void demonstrateSequence(T* arr, int size, const char* typeName)
+{
+    std::cout << "\n=== Демонстрация: " << typeName << " ===\n";
+    Sequence<T>* seq = new MutableArraySequence<T>(arr, size);
+    printSequence<T>(seq, "Исходная");
+
+    Sequence<T>* r;
+
+    r = seq->Append(arr[size - 1]);
+    if (r != seq) 
+    { 
+        delete seq; seq = r;
+    }
+    printSequence<T>(seq, "После Append");
+
+    r = seq->Prepend(arr[0]);
+    if (r != seq) 
+    { 
+        delete seq; seq = r; 
+    }
+    printSequence<T>(seq, "После Prepend");
+
+    r = seq->RemoveAt(0);
+    if (r != seq) 
+    { 
+        delete seq; seq = r; 
+    }
+    printSequence<T>(seq, "После RemoveAt(0)");
+
+    Sequence<T>* sub = seq->GetSubsequence(0, seq->GetLength() - 1);
+    printSequence<T>(sub, "GetSubsequence(0, len-1)");
+    delete sub;
+    delete seq; 
+}
+
+void demonstrateInt()
+{
     int arr[] = {10, 20, 30, 40, 50};
-    MutableArraySequence<int> seq(arr, 5);
-    std::cout << "1. Created MutableArraySequence<int> from {10, 20, 30, 40, 50}" << std::endl;
-    printSequence(&seq, "  Original");
-    
-    seq.Append(60);
-    std::cout << "\n2. Append(60):" << std::endl;
-    printSequence(&seq, "  Result");
-    
-    seq.Prepend(5);
-    std::cout << "\n3. Prepend(5):" << std::endl;
-    printSequence(&seq, "  Result");
-    
-    seq.InsertAt(25, 3);
-    std::cout << "\n4. InsertAt(25, 3):" << std::endl;
-    printSequence(&seq, "  Result");
-    
-    std::cout << "\n5. Get(3): " << seq.Get(3) << std::endl;
-    
-    seq.RemoveAt(4);
-    std::cout << "\n6. RemoveAt(4):" << std::endl;
-    printSequence(&seq, "  Result");
-    
-    Sequence<int>* subSeq = seq.GetSubsequence(2, 5);
-    std::cout << "\n7. GetSubsequence(2, 5):" << std::endl;
-    printSequence(subSeq, "  Subsequence");
-    delete subSeq;  
-    
-    int arr2[] = {100, 200};
-    MutableArraySequence<int> seq2(arr2, 2);
-    Sequence<int>* concatSeq = seq.Concat(&seq2);
-    std::cout << "\n8. Concat with [100, 200]:" << std::endl;
-    printSequence(concatSeq, "  Result");
-    if (concatSeq != &seq) delete concatSeq; 
+    demonstrateSequence<int>(arr, 5, "interer");
 }
 
-// для string
-void demonstrateStringSequence() 
+void demonstrateString()
 {
-    std::cout << "\n=== DEMONSTRATION: STRING SEQUENCE ===\n" << std::endl;
-    
     std::string arr[] = {"apple", "banana", "cherry", "date"};
-    MutableArraySequence<std::string> seq(arr, 4);
-    std::cout << "1. Created MutableArraySequence<string> from {\"apple\", \"banana\", \"cherry\", \"date\"}" << std::endl;
-    printSequence(&seq, "  Original");
-    
-    seq.Append("tomato");
-    std::cout << "\n2. Append(\"tomato\"):" << std::endl;
-    printSequence(&seq, "  Result");
-
-    seq.Prepend("apricot");
-    std::cout << "\n3. Prepend(\"apricot\"):" << std::endl;
-    printSequence(&seq, "  Result");
-    
-    seq.InsertAt("blueberry", 3);
-    std::cout << "\n4. InsertAt(\"blueberry\", 3):" << std::endl;
-    printSequence(&seq, "  Result");
-
-    std::cout << "\n5. Get(3): " << seq.Get(3) << std::endl;
-    
-    seq.RemoveAt(2);
-    std::cout << "\n6. RemoveAt(2):" << std::endl;
-    printSequence(&seq, "  Result");
-    
-    Sequence<std::string>* subSeq = seq.GetSubsequence(1, 4);
-    std::cout << "\n7. GetSubsequence(1, 4):" << std::endl;
-    printSequence(subSeq, "  Subsequence");
-    delete subSeq;
-    
-    std::string arr2[] = {"fig", "grape"};
-    MutableArraySequence<std::string> seq2(arr2, 2);
-    Sequence<std::string>* concatSeq = seq.Concat(&seq2);
-    std::cout << "\n8. Concat with [\"fig\", \"grape\"]:" << std::endl;
-    printSequence(concatSeq, "  Result");
-    if (concatSeq != &seq) delete concatSeq;
+    demonstrateSequence<std::string>(arr, 4, "string");
 }
 
-
-int main() 
+//Интерактивный режим
+void runInteractive()
 {
-    //автом-я дем-я
-    std::cout << "========================================" << std::endl;
-    std::cout << "   SEQUENCE DEMONSTRATION" << std::endl;
-    std::cout << "========================================" << std::endl;
-    
-    demonstrateIntSequence();    
-    demonstrateStringSequence();  
+    Sequence<int>*         currentInt    = nullptr;
+    Sequence<std::string>* currentString = nullptr;
+    bool isIntMode = true;
+    int choice;
 
-    //интер-й режим
-    std::cout << "\n========================================" << std::endl;
-    std::cout << "   INTERACTIVE MODE" << std::endl;
-    std::cout << "========================================" << std::endl;
-    
-    Sequence<int>* currentSeq = nullptr; 
-    Sequence<int>* otherSeq = nullptr;    
-    int choice;                            
-    
-    //try для исключений
-    try 
+    do
     {
-        do 
+        try
         {
-            printMenu();                    
-            std::cin >> choice;             
-            std::cin.ignore(10000, '\n');  
-            
-            //соз-е посл для int
-            if (choice >= 1 && choice <= 4) 
-            {
-                std::cout << "Enter integers (space separated): ";
-                int temp[100];
-                int count = readArray(temp, 100);
-                
-                if (currentSeq) delete currentSeq;  
-                
-                switch(choice) 
-                {
-                    case 1:
-                        currentSeq = new MutableArraySequence<int>(temp, count);
-                        std::cout << "Mutable ArraySequence<int> created." << std::endl;
-                        break;
-                    case 2:
-                        currentSeq = new ImmutableArraySequence<int>(temp, count);
-                        std::cout << "Immutable ArraySequence<int> created." << std::endl;
-                        break;
-                    case 3:
-                        currentSeq = new MutableListSequence<int>(temp, count);
-                        std::cout << "Mutable ListSequence<int> created." << std::endl;
-                        break;
-                    case 4:
-                        currentSeq = new ImmutableListSequence<int>(temp, count);
-                        std::cout << "Immutable ListSequence<int> created." << std::endl;
-                        break;
-                }
-                printSequence(currentSeq, "Created");
-            }
-            
-            //соз-е посл для string
-            else if (choice >= 5 && choice <= 8) 
-            {
-                std::cout << "Enter strings (space separated): ";
-                std::string temp[100];
-                readArray(temp, 100);
-                
-                //Оставляем int режим, строки видны в демонстрации
-                std::cout << "String sequences are demonstrated in the demonstration part." << std::endl;
-                std::cout << "Interactive mode uses int for simplicity." << std::endl;
-            }
-            
-            //печать пос-и
-            else if (choice == 9) 
-            {
-                if (!currentSeq) 
-                {
-                    std::cout << "No sequence. Create one first (options 1-4)." << std::endl;
-                    continue;
-                }
-                printSequence(currentSeq, "Current Sequence");
-            }
-            
-            else if (choice == 10) 
-            {
-                if (!currentSeq) 
-                {
-                    std::cout << "No sequence." << std::endl;
-                    continue;
-                }
-                int idx;
-                std::cout << "Enter index: ";
-                std::cin >> idx;
-                std::cout << "Element at " << idx << ": " << currentSeq->Get(idx) << std::endl;
-                std::cin.ignore(10000, '\n');
-            }
-            
-            else if (choice == 11) 
-            {
-                if (!currentSeq) 
-                {
-                    std::cout << "No sequence." << std::endl;
-                    continue;
-                }
-                std::cout << "Length: " << currentSeq->GetLength() << std::endl;
-            }
-            
-            else if (choice == 12) 
-            {
-                if (!currentSeq) 
-                {
-                    std::cout << "No sequence." << std::endl;
-                    continue;
-                }
-                int val;
-                std::cout << "Enter value to append: ";
-                std::cin >> val;
-                std::cin.ignore(10000, '\n');
-                
-                Sequence<int>* newSeq = currentSeq->Append(val);
-                //Если вернулся другой объект (immutable), заменяем текущий
-                if (newSeq != currentSeq) 
-                {
-                    delete currentSeq;
-                    currentSeq = newSeq;
-                }
-                std::cout << "Appended." << std::endl;
-                printSequence(currentSeq, "Now");
-            }
-            
-            else if (choice == 13) 
-            {
-                if (!currentSeq) 
-                {
-                    std::cout << "No sequence." << std::endl;
-                    continue;
-                }
-                int val;
-                std::cout << "Enter value to prepend: ";
-                std::cin >> val;
-                std::cin.ignore(10000, '\n');
-                
-                Sequence<int>* newSeq = currentSeq->Prepend(val);
-                if (newSeq != currentSeq) 
-                {
-                    delete currentSeq;
-                    currentSeq = newSeq;
-                }
-                std::cout << "Prepended." << std::endl;
-                printSequence(currentSeq, "Now");
-            }
-            
-            else if (choice == 14) 
-            {
-                if (!currentSeq) 
-                {
-                    std::cout << "No sequence." << std::endl;
-                    continue;
-                }
-                int val, idx;
-                std::cout << "Enter index and value: ";
-                std::cin >> idx >> val;
-                std::cin.ignore(10000, '\n');
-                
-                Sequence<int>* newSeq = currentSeq->InsertAt(val, idx);
-                if (newSeq != currentSeq) 
-                {
-                    delete currentSeq;
-                    currentSeq = newSeq;
-                }
-                std::cout << "Inserted." << std::endl;
-                printSequence(currentSeq, "Now");
-            }
-            
-            else if (choice == 15) 
-            {
-                if (!currentSeq) 
-                {
-                    std::cout << "No sequence." << std::endl;
-                    continue;
-                }
-                int idx;
-                std::cout << "Enter index to remove: ";
-                std::cin >> idx;
-                std::cin.ignore(10000, '\n');
-                
-                Sequence<int>* newSeq = currentSeq->RemoveAt(idx);
-                if (newSeq != currentSeq) 
-                {
-                    delete currentSeq;
-                    currentSeq = newSeq;
-                }
-                std::cout << "Removed." << std::endl;
-                printSequence(currentSeq, "Now");
-            }
-            
-            else if (choice == 16) 
-            {
-                if (!currentSeq) 
-                {
-                    std::cout << "No sequence." << std::endl;
-                    continue;
-                }
-                int start, end;
-                std::cout << "Enter start and end index: ";
-                std::cin >> start >> end;
-                std::cin.ignore(10000, '\n');
-                
-                Sequence<int>* subSeq = currentSeq->GetSubsequence(start, end);
-                printSequence(subSeq, "Subsequence");
-                delete subSeq;
-            }
-            
-            else if (choice == 17) 
-            {
-                std::cout << "Enter integers for the OTHER sequence: ";
-                int temp[100];
-                int count = readArray(temp, 100);
-                
-                if (otherSeq) delete otherSeq;
-                otherSeq = new MutableArraySequence<int>(temp, count);
-                
-                if (!currentSeq) 
-                {
-                    std::cout << "No current sequence." << std::endl;
-                    continue;
-                }
-                
-                Sequence<int>* newSeq = currentSeq->Concat(otherSeq);
-                if (newSeq != currentSeq) 
-                {
-                    delete currentSeq;
-                    currentSeq = newSeq;
-                }
-                std::cout << "Concatenated." << std::endl;
-                printSequence(currentSeq, "Now");
-            }
-            
-            //тест Bit пос-и
-            else if (choice == 18) 
-            {
-                std::cout << "Enter bits (e.g., 1 0 1): ";
-                Bit temp[100];
-                int count = readArray(temp, 100);
-                
-                BitSequence bs(temp, count);
-                printSequence(&bs, "BitSequence");
-                
-                if (count > 0) 
-                {
-                    std::cout << "\nTesting NOT operation:" << std::endl;
-                    BitSequence* bsNot = bs.Not();
-                    printSequence(bsNot, "NOT");
-                    delete bsNot;
-                    
-                    std::cout << "\nEnter second bit sequence (same length): ";
-                    Bit temp2[100];
-                    int count2 = readArray(temp2, 100);
-                    
-                    if (count2 == count) 
-                    {
-                        BitSequence bs2(temp2, count2);
-                        
-                        BitSequence* bsAnd = bs.And(bs2);
-                        BitSequence* bsOr = bs.Or(bs2);
-                        BitSequence* bsXor = bs.Xor(bs2);
-                        
-                        std::cout << "\nBitwise operations:" << std::endl;
-                        printSequence(&bs2, "Second");
-                        printSequence(bsAnd, "AND");
-                        printSequence(bsOr, "OR");
-                        printSequence(bsXor, "XOR");
-                        
-                        delete bsAnd;
-                        delete bsOr;
-                        delete bsXor;
-                    } else {
-                        std::cout << "Lengths don't match. Skipping AND/OR/XOR." << std::endl;
-                    }
-                }
-            }
-            
-        } while (choice != 0);
-        
-    }
-    //Ислючения
-    catch (const IndexOutOfRangeException& e) 
-    {
-        std::cerr << "Index Error: " << e.what() << std::endl;
-    }
-    catch (const EmptyStructureException& e) 
-    {
-        std::cerr << "Empty Structure Error: " << e.what() << std::endl;
-    }
-    catch (const InvalidArgumentException& e) 
-    {
-        std::cerr << "Invalid Argument Error: " << e.what() << std::endl;
-    }
-    catch (const MemoryAllocationException& e) 
-    {
-        std::cerr << "Memory Error: " << e.what() << std::endl;
-    }
-    catch (const std::exception& e) 
-    {
-        std::cerr << "Standard Error: " << e.what() << std::endl;
-    }
-    catch (...) 
-    {
-        std::cerr << "Unknown error occurred" << std::endl;
-    }
+            printMenu();
+            choice = -1;
+            readInt(choice);
+            if (choice == -1) continue;
 
-    delete currentSeq;
-    delete otherSeq;
-    
-    std::cout << "\nProgram finished." << std::endl;
+            //Создание int
+            if (choice >= 1 && choice <= 4)
+            {
+                std::cout << "Введите целые числа через пробел: ";
+                int temp[100];
+                int count = readArray<int>(temp, 100);
+
+                if (count == 0) 
+                { 
+                    std::cout << "Ошибка: нет элементов\n"; 
+                    continue; 
+                }
+                delete currentInt;    currentInt    = nullptr;
+                delete currentString; currentString = nullptr;
+                isIntMode = true;
+                switch (choice)
+                {
+                    case 1: currentInt = new MutableArraySequence<int>(temp, count);   break;
+                    case 2: currentInt = new ImmutableArraySequence<int>(temp, count); break;
+                    case 3: currentInt = new MutableListSequence<int>(temp, count);    break;
+                    case 4: currentInt = new ImmutableListSequence<int>(temp, count);  break;
+                }
+                printSequence<int>(currentInt, "Создана");
+            }
+
+            //Создание string
+            else if (choice >= 5 && choice <= 8)
+            {
+                std::cout << "Введите строки через пробел: ";
+                std::string temp[100];
+                int count = readArray<std::string>(temp, 100);
+
+                if (count == 0) 
+                { 
+                    std::cout << "Ошибка: нет элементов\n"; 
+                    continue; 
+                }
+                delete currentInt;    currentInt    = nullptr;
+                delete currentString; currentString = nullptr;
+                isIntMode = false;
+                switch (choice)
+                {
+                    case 5: currentString = new MutableArraySequence<std::string>(temp, count);   break;
+                    case 6: currentString = new ImmutableArraySequence<std::string>(temp, count); break;
+                    case 7: currentString = new MutableListSequence<std::string>(temp, count);    break;
+                    case 8: currentString = new ImmutableListSequence<std::string>(temp, count);  break;
+                }
+                printSequence<std::string>(currentString, "Создана");
+            }
+
+            else if (choice == 9)
+            {
+                if (isIntMode) 
+                {
+                    printSequence<int>(currentInt, "Текущая");
+                } else
+                {
+                      printSequence<std::string>(currentString, "Текущая");
+                }
+            }
+            else if (choice == 10)
+            {
+                if (isIntMode) 
+                {
+                    opGet<int>(currentInt);
+                } else           
+                {
+                    opGet<std::string>(currentString);
+                }
+            }
+            else if (choice == 11)
+            {
+                if (isIntMode && currentInt)
+                {
+                    std::cout << "Length = " << currentInt->GetLength() << "\n";
+                } else if (!isIntMode && currentString)
+                {
+                    std::cout << "Length = " << currentString->GetLength() << "\n";
+                } else
+                {
+                    std::cout << "Последовательность не создана\n";
+                }
+            }
+            else if (choice == 12)
+            {
+                if (isIntMode) 
+                {
+                    opAppend<int>(currentInt);
+                } else           
+                {
+                    opAppend<std::string>(currentString);
+                }
+            }
+            else if (choice == 13)
+            {
+                if (isIntMode) 
+                {
+                    opPrepend<int>(currentInt);
+                }else          
+                {
+                    opPrepend<std::string>(currentString);
+                }
+            }
+            else if (choice == 14)
+            {
+                if (isIntMode) 
+                {
+                    opInsertAt<int>(currentInt);
+                }else           
+                {
+                    opInsertAt<std::string>(currentString);
+                }
+            }
+            else if (choice == 15)
+            {
+                if (isIntMode) 
+                {
+                    opRemoveAt<int>(currentInt);
+                } else           
+                {
+                    opRemoveAt<std::string>(currentString);
+                }
+            }
+            else if (choice == 16)
+            {
+                if (isIntMode) 
+                {
+                    opSubsequence<int>(currentInt);
+                } else           
+                {
+                    opSubsequence<std::string>(currentString);
+                }
+            }
+            else if (choice == 17)
+            {
+                if (isIntMode) 
+                {
+                    opConcat<int>(currentInt);
+                } else           
+                {
+                    opConcat<std::string>(currentString);
+                }
+            }
+
+            else if (choice == 18)
+            {
+                std::cout << "Введите биты первой последовательности (0/1): ";
+                Bit temp[100];
+                int count = readArray<Bit>(temp, 100);
+                if (count == 0) 
+                { 
+                    std::cout << "Ошибка: нет битов\n"; 
+                    continue;
+                }
+                BitSequence bs(temp, count);
+                printSequence<Bit>(&bs, "BitSequence");
+
+                BitSequence* bsNot = bs.Not();
+                printSequence<Bit>(bsNot, "NOT");
+                delete bsNot;
+
+                std::cout << "Введите биты второй последовательности (той же длины): ";
+                Bit temp2[100];
+                int count2 = readArray<Bit>(temp2, 100);
+                if (count2 != count)
+                {
+                    std::cout << "Ошибка: длины не совпадают\n";
+                    continue;
+                }
+                BitSequence bs2(temp2, count2);
+                BitSequence* bsAnd = bs.And(bs2);
+                BitSequence* bsOr  = bs.Or(bs2);
+                BitSequence* bsXor = bs.Xor(bs2);
+                printSequence<Bit>(bsAnd, "AND");
+                printSequence<Bit>(bsOr,  "OR");
+                printSequence<Bit>(bsXor, "XOR");
+                delete bsAnd; 
+                delete bsOr; 
+                delete bsXor;
+            }
+
+            else if (choice == 19)
+            {
+                std::cout << "Введите int-элементы для AdaptiveSequence: ";
+                int temp[100];
+                int count = readArray<int>(temp, 100);
+                if (count == 0) 
+                { 
+                    std::cout << "Ошибка: нет элементов\n"; 
+                    continue; 
+                }
+                AdaptiveSequence<int> adaptive(temp, count);
+                std::cout << "Реализация: " << adaptive.GetImplType() << "\n";
+                printSequence<int>(&adaptive, "AdaptiveSequence");
+                for (int i = 0; i < 20; ++i) 
+                { 
+                    adaptive.Get(i % count);
+                }
+                std::cout << "Реализация после 20 чтений: " << adaptive.GetImplType() << "\n";
+            }
+
+            else if (choice != 0)
+                std::cout << "Неизвестная команда. Введите число от 0 до 19\n";
+        }
+        catch (const IndexOutOfRangeException& e)  
+        { 
+            std::cerr << "Ошибка индекса: "   << e.what() << "\n"; 
+        }
+        catch (const EmptyStructureException& e)   
+        { 
+            std::cerr << "Пустая структура: " << e.what() << "\n"; 
+        }
+        catch (const InvalidArgumentException& e)  
+        { 
+            std::cerr << "Ошибка аргумента: " << e.what() << "\n"; 
+        }
+        catch (const std::exception& e)            
+        { 
+            std::cerr << "Ошибка: "           << e.what() << "\n"; 
+        }
+
+    } while (choice != 0);
+
+    delete currentInt;
+    delete currentString;
+}
+
+int main()
+{
+    std::cout << "========================================\n"
+              << "   ДЕМОНСТРАЦИЯ\n"
+              << "========================================\n";
+    demonstrateInt();
+    demonstrateString();
+
+    std::cout << "\n========================================\n"
+              << "   ИНТЕРАКТИВНЫЙ РЕЖИМ\n"
+              << "========================================\n";
+    runInteractive();
+
+    std::cout << "\nПрограмма завершена\n";
     return 0;
 }
-
-
-
-
-// g++ -Wall -std=c++11 -o sequence_test.exe main.cpp
-// sequence_test.exe
