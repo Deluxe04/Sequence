@@ -10,7 +10,7 @@ T* allocateMemory(int size)
 {
     if (size < 0) 
     {
-        throw InvalidArgumentException("Size cannot be negative");
+        throw InvalidArgumentException();
     }
 
     if (size == 0)
@@ -24,7 +24,7 @@ T* allocateMemory(int size)
         ptr = new T[size]();
     } catch (...) 
     {
-        throw MemoryAllocationException("Failed to allocate " + std::string("array"));
+        throw MemoryAllocationException();
     }
     
     return ptr;
@@ -72,7 +72,7 @@ public:
     {
         if (sz < 0) 
         {
-            throw InvalidArgumentException("Size cannot be negative");
+            throw InvalidArgumentException();
         }
         data = allocateMemory<T>(sz);
     }
@@ -108,12 +108,12 @@ public:
         return *this;
     }
 
-    //Декомпозиция (неконстантная версия вызывает константную)
+    //Декомпозиция (неconst версия вызывает const)
     const T& Get(int index) const 
     {
         if (index < 0 || index >= size)
         {
-            throw IndexOutOfRangeException("DynamicArray::Get — index out of range");
+            throw IndexOutOfRangeException();
         }
         return data[index];
     }
@@ -142,7 +142,7 @@ public:
     {
         if (index < 0 || index >= size)
         {
-            throw IndexOutOfRangeException("DynamicArray::Set — index out of range");
+            throw IndexOutOfRangeException();
         }
         data[index] = value;
     }
@@ -151,7 +151,7 @@ public:
     {
         if (newSize < 0) 
         {
-            throw InvalidArgumentException("New size cannot be negative");
+            throw InvalidArgumentException();
         }
         if (newSize == size) return;
         
@@ -190,7 +190,7 @@ public:
     {
         if (!array)
         {
-            throw ObjectDisposedException("DynamicArrayEnumerator: array was destroyed");
+            throw ObjectDisposedException();
         }
         if (currentIndex + 1 < array->GetSize())
         {
@@ -204,7 +204,7 @@ public:
     {
         if (currentIndex < 0 || currentIndex >= array->GetSize())
         {
-            throw IndexOutOfRangeException("DynamicArrayEnumerator: iterator out of range");
+            throw IndexOutOfRangeException();
         }
         return array->Get(currentIndex);
     }
