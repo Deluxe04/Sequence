@@ -2,6 +2,10 @@
 #define LINKED_LIST_H
 
 #include "exceptions.h"
+#include "iterator.h"  
+
+template <class T>
+class LinkedListEnumerator;
 
 template <class T>
 class LinkedList 
@@ -19,17 +23,20 @@ private:
     Node* tail;
     int length;
 
-    void copyFrom(const LinkedList<T>& other) 
+    //Создаёт узел, оборачивает исключения памяти
+    Node* createNode(const T& value, Node* next = nullptr)
     {
-        Node* currentOther = other.head;
-        while (currentOther != nullptr) 
-        {
-            this->Append(currentOther->data);
-            currentOther = currentOther->next;
+        Node* node = nullptr;
+        try { node = new Node(value, next); }
+        catch (...) 
+        { 
+            throw MemoryAllocationException("LinkedList: node allocation failed"); 
         }
+        return node;
     }
 
-    void clear() {
+    void clear() 
+    {
         Node* current = head;
         while (current != nullptr) 
         {
@@ -41,45 +48,60 @@ private:
         length = 0;
     }
 
-    // Получение узла по индексу (const-версия)
-    const Node* getNodeAt(int index) const 
+    //Копирует узлы из другого списка
+    void copyFrom(const LinkedList<T>& other)
     {
-        if (index < 0 || index >= length) 
+        Node* current = other.head;
+        while (current != nullptr)
         {
-            throw IndexOutOfRangeException();
-        }
-        
-        const Node* current = head;
-        for (int i = 0; i < index; ++i) 
-        {
+            Append(current->data);
             current = current->next;
+        }
+    }
+
+    const Node* const* getNodePtrAt(int index) const
+    {
+        if (index < 0 || index > length)
+        {
+            throw IndexOutOfRangeException("LinkedList: index out of range");
+        }
+
+        const Node* const* current = reinterpret_cast<const Node* const*>(&head);
+
+        for (int i = 0; i < index; ++i)
+        {
+            current = reinterpret_cast<const Node* const*>(&((*current)->next));
         }
         return current;
     }
-    
-    // Получение узла по индексу (не-const версия)
-    Node* getNodeAt(int index) 
+
+    Node** getNodePtrAt(int index)
     {
-        return const_cast<Node*>(static_cast<const LinkedList<T>&>(*this).getNodeAt(index));
+        return const_cast<Node**>(static_cast<const LinkedList<T>&>(*this).getNodePtrAt(index));
     }
 
-    // Централизует создание узлов
-    Node* createNode(const T& value, Node* next = nullptr) 
-    {
-        Node* newNode = nullptr;
-        try {
-            newNode = new Node(value, next);
-        } catch (...) {
-            throw MemoryAllocationException();
-        }
-        return newNode;
+    const Node* getNodeAt(int index) const 
+    { 
+        return *getNodePtrAt(index); 
+    }
+
+    Node* getNodeAt(int index)       
+    { 
+        return *getNodePtrAt(index); 
     }
 
 public:
     LinkedList(const T* items, int count) : head(nullptr), tail(nullptr), length(0) 
     {
-        if (count < 0) throw InvalidArgumentException("Count cannot be negative");
-        if (count > 0 && items == nullptr) throw InvalidArgumentException("Null pointer provided");
+        if (count < 0) 
+        {
+            throw InvalidArgumentException("Count cannot be negative");
+        }
+
+        if (count > 0 && items == nullptr) 
+        {
+            throw InvalidArgumentException("Null pointer provided");
+        }
         
         for (int i = 0; i < count; ++i) 
         {
@@ -111,7 +133,10 @@ public:
 
     const T& GetFirst() const 
     {
-        if (head == nullptr) throw EmptyStructureException();
+        if (head == nullptr) 
+        {
+            throw EmptyStructureException("LinkedList is empty");
+        }
         return getNodeAt(0)->data;
     }
 
@@ -120,13 +145,16 @@ public:
         return const_cast<T&>(static_cast<const LinkedList<T>&>(*this).GetFirst());
     }
 
-    const T& GetLast() const 
+    const T& GetLast() const
     {
-        if (tail == nullptr) throw EmptyStructureException();
-        return getNodeAt(length - 1)->data;
+        if (tail == nullptr) 
+        {
+            throw EmptyStructureException("LinkedList is empty");
+        }
+        return tail->data;  
     }
 
-    T& GetLast() 
+    T& GetLast()
     {
         return const_cast<T&>(static_cast<const LinkedList<T>&>(*this).GetLast());
     }
@@ -143,18 +171,19 @@ public:
 
     LinkedList<T> GetSubList(int startIndex, int endIndex) const
     {
-        if (startIndex < 0 || endIndex >= length || startIndex > endIndex) {
-            throw IndexOutOfRangeException();
-        }
-        
-        LinkedList<T> subList;
-        const Node* current = getNodeAt(startIndex); 
-        for (int i = startIndex; i <= endIndex; ++i) 
+        if (startIndex < 0 || endIndex >= length || startIndex > endIndex)
         {
-            subList.Append(current->data);
+            throw IndexOutOfRangeException("LinkedList::GetSubList — index out of range");
+        }
+
+        LinkedList<T> result;
+        const Node* current = getNodeAt(startIndex);
+        for (int i = startIndex; i <= endIndex; ++i)
+        {
+            result.Append(current->data);
             current = current->next;
         }
-        return subList;
+        return result;
     }
 
     int GetLength() const 
@@ -172,24 +201,43 @@ public:
         InsertAt(item, 0);  
     }
 
-    void InsertAt(const T& item, int index) 
+    void InsertAt(const T& item, int index)
     {
-        if (index < 0 || index > length) throw IndexOutOfRangeException();
-
-        Node** current = &head;
-        for (int i = 0; i < index; ++i) 
+        if (index < 0 || index > length)
         {
-            current = &((*current)->next);
+            throw IndexOutOfRangeException("LinkedList::InsertAt — index out of range");
         }
-        
+
+        Node** current = getNodePtrAt(index);
+
         Node* newNode = createNode(item, *current);
         *current = newNode;
-        
-        if (index == length) 
+
+        if (index == length)
         {
             tail = newNode;
         }
-        length++;
+        ++length;
+    }
+
+    void RemoveAt(int index)
+    {
+        if (index < 0 || index >= length)
+        {
+            throw IndexOutOfRangeException("LinkedList::RemoveAt — index out of range");
+        }
+        Node** current = getNodePtrAt(index);
+
+        Node* toDelete = *current;
+        *current = toDelete->next;  
+
+        if (toDelete->next == nullptr)
+        {
+            tail = (length > 1) ? getNodeAt(length - 2) : nullptr;
+        }
+
+        delete toDelete;
+        --length; 
     }
 
     LinkedList<T> Concat(const LinkedList<T>& list) const 
@@ -202,6 +250,55 @@ public:
             current = current->next;
         }
         return result;
+    }
+
+    IEnumerator<T>* GetEnumerator() const 
+    {
+        return new LinkedListEnumerator<T>(this);
+    }
+    
+    friend class LinkedListEnumerator<T>;
+};
+
+//IEnumerator
+template <class T>
+class LinkedListEnumerator : public IEnumerator<T>
+{
+private:
+    const LinkedList<T>* list; 
+    const typename LinkedList<T>::Node* current;       
+    bool started;                                
+    
+public:
+    LinkedListEnumerator(const LinkedList<T>* lst) 
+        : list(lst), current(nullptr), started(false) {}
+    
+    bool MoveNext() override 
+    {
+        if (!started) 
+        {
+            current = list->head;
+            started = true;
+        } else if (current) 
+        {
+            current = current->next;
+        }
+        return current != nullptr;
+    }
+    
+    const T& Current() const override
+    {
+        if (!current) 
+        {
+            throw IndexOutOfRangeException("Iterator out of range");
+        }
+        return current->data;
+    }
+    
+    void Reset() override 
+    {
+        current = nullptr;
+        started = false;
     }
 };
 
