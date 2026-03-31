@@ -27,39 +27,39 @@ protected:
         return arr;
     }
 
-    Option<T> FindElement(bool (*predicate)(const T&), bool fromFirst) const 
+    Sequence<T>* buildFromArray(T* tempArray, int count) const
     {
-        int len = GetLength();
-        if (fromFirst) 
+        Sequence<T>* result = nullptr;
+        try 
         {
-            for (int i = 0; i < len; ++i) 
-            {
-                const T& item = this->Get(i);
-                if (predicate == nullptr || predicate(item)) 
-                {
-                    return Option<T>(item);
-                }
-            }
-        } 
-        else 
+            result = instance(tempArray, count);
+        } catch (...) 
         {
-            for (int i = len - 1; i >= 0; --i) 
-            {
-                const T& item = this->Get(i);
-                if (predicate == nullptr|| predicate(item)) 
-                {
-                    return Option<T>(item);
-                }
-            }
+            delete[] tempArray;
+            throw;
         }
-        return Option<T>();
+        delete[] tempArray;
+        return result;
     }
 
 public:
+    using Sequence<T>::GetFirst;
+    using Sequence<T>::GetLast;
+
     //Конструкторы
     ListSequenceBase(const T* items, int count) : list(new LinkedList<T>(items, count)) {}
     ListSequenceBase() : list(new LinkedList<T>()) {}
     ListSequenceBase(const ListSequenceBase<T>& other) : list(new LinkedList<T>(*other.list)) {}
+
+    ListSequenceBase<T>& operator=(const ListSequenceBase<T>& other) 
+    {
+        if (this != &other) 
+        {
+            delete list;
+            list = new LinkedList<T>(*other.list); 
+        }
+        return *this;
+    }
 
     //Деструктор
     ~ListSequenceBase() override 
@@ -89,21 +89,19 @@ public:
 
     Sequence<T>* GetSubsequence(int startIndex, int endIndex) const override 
     {
-        if (startIndex < 0 || endIndex >= GetLength() || startIndex > endIndex) 
+        if (startIndex < 0 || endIndex >= GetLength() || startIndex > endIndex)
         {
             throw IndexOutOfRangeException();
         }
-        
+
         int subLength = endIndex - startIndex + 1;
         T* tempArray = new T[subLength];
+
         for (int i = startIndex; i <= endIndex; ++i)
         {
             tempArray[i - startIndex] = this->Get(i);
         }
-        
-        Sequence<T>* subSeq = instance(tempArray, subLength);
-        delete[] tempArray;
-        return subSeq;
+        return buildFromArray(tempArray, subLength);
     }
 
     //Базовые операции 
@@ -119,73 +117,97 @@ public:
 
     Sequence<T>* InsertAt(const T& item, int index) override 
     {
-        if (index < 0 || index > GetLength()) 
+        if (index < 0 || index > GetLength())
         {
             throw IndexOutOfRangeException();
         }
-        
+
+        const int oldLen = GetLength();
         T* tempArray = ListToArray();
-        T* newArray = new T[GetLength() + 1];
-        
-        for (int i = 0; i < index; ++i) 
+        T* newArray = nullptr;
+        try 
         {
+            newArray = new T[oldLen + 1];
+        } catch (...) 
+        {
+            delete[] tempArray;
+            throw;
+        }
+
+        for (int i = 0; i < index; ++i)
+        {            
             newArray[i] = tempArray[i];
         }
+
         newArray[index] = item;
-        for (int i = index; i < GetLength(); ++i) 
+        for (int i = index; i < oldLen; ++i)
         {
             newArray[i + 1] = tempArray[i];
         }
-        
-        Sequence<T>* newSeq = instance(newArray, GetLength() + 1);
         delete[] tempArray;
-        delete[] newArray;
-        return newSeq;
+
+        return buildFromArray(newArray, oldLen + 1);
     }
 
     Sequence<T>* RemoveAt(int index) override 
     {
-        if (index < 0 || index >= GetLength()) 
+        if (index < 0 || index >= GetLength())
         {
             throw IndexOutOfRangeException();
         }
-        
+
+        const int oldLen = GetLength();
         T* tempArray = ListToArray();
-        T* newArray = new T[GetLength() - 1];
-        
-        for (int i = 0, j = 0; i < GetLength(); ++i) 
+
+        T* newArray = nullptr;
+        try 
         {
-            if (i != index) 
-            {
-                newArray[j++] = tempArray[i];
-            }
+            newArray = new T[oldLen - 1];
+        } catch (...) 
+        {
+            delete[] tempArray;
+            throw;
         }
-        
-        Sequence<T>* newSeq = instance(newArray, GetLength() - 1);
+        for (int i = 0, j = 0; i < oldLen; ++i)
+        {
+            if (i != index) newArray[j++] = tempArray[i];
+        }
         delete[] tempArray;
-        delete[] newArray;
-        return newSeq;
+
+        return buildFromArray(newArray, oldLen - 1);
     }
 
     Sequence<T>* Concat(Sequence<T>* other) override 
     {
+        if (!other)
+        {
+            throw InvalidArgumentException();
+        }
+        const int len = GetLength();
+        const int otherLen = other->GetLength();
+
         T* tempArray = ListToArray();
-        int otherLen = other->GetLength();
-        T* newArray = new T[GetLength() + otherLen];
-        
-        for (int i = 0; i < GetLength(); ++i) 
+        T* newArray = nullptr;
+        try 
+        {
+            newArray = new T[len + otherLen];
+        } catch (...) 
+        {
+            delete[] tempArray;
+            throw;
+        }
+        for (int i = 0; i < len; ++i)
         {
             newArray[i] = tempArray[i];
         }
-        for (int i = 0; i < otherLen; ++i) 
+
+        for (int i = 0; i < otherLen; ++i)
         {
-            newArray[GetLength() + i] = other->Get(i);
+            newArray[len + i] = other->Get(i);
         }
-        
-        Sequence<T>* newSeq = instance(newArray, GetLength() + otherLen);
         delete[] tempArray;
-        delete[] newArray;
-        return newSeq;
+
+        return buildFromArray(newArray, len + otherLen);
     }
     
     const T& operator[](int index) const 
@@ -195,77 +217,46 @@ public:
 
     Sequence<T>* Map(T (*f)(const T&)) const override 
     {
-        int len = GetLength();
+        const int len = GetLength();
+        if (len == 0) 
+        {
+            return instance(nullptr, 0);
+        }
+
         T* tempArray = new T[len];
-        for (int i = 0; i < len; ++i) 
+        for (int i = 0; i < len; ++i)
         {
             tempArray[i] = f(this->Get(i));
         }
-        Sequence<T>* result = instance(tempArray, len);
-        delete[] tempArray;
-        return result;
+        return buildFromArray(tempArray, len);
     }
 
     Sequence<T>* Where(bool (*predicate)(const T&)) const override 
     {
-        int len = GetLength();
-        if (predicate == nullptr) 
-        {
-            T* arr = new T[len];
-            for (int i = 0; i < len; ++i)
-            {
-                arr[i] = this->Get(i);
-            }
-            Sequence<T>* result = instance(arr, len);
-            delete[] arr;
-            return result;
-        }
-        
+        const int len = GetLength();
         int count = 0;
-        for (int i = 0; i < len; ++i) 
+
+        for (int i = 0; i < len; ++i)
         {
-            if (predicate(this->Get(i))) ++count;
+            if (!predicate || predicate(this->Get(i))) ++count;
         }
-        
-        T* tempArray = nullptr;
-        if (count > 0) 
+
+        if (count == 0)
         {
-            tempArray = new T[count];
-            int j = 0;
-            for (int i = 0; i < len; ++i) 
+            return instance(nullptr, 0);
+        }
+
+        T* tempArray = new T[count];
+        int j = 0;
+        for (int i = 0; i < len; ++i)
+        {
+            const T& item = this->Get(i);
+            if (!predicate || predicate(item))
             {
-                const T& item = this->Get(i);
-                if (predicate(item)) 
-                {
-                    tempArray[j++] = item;
-                }
+                tempArray[j++] = item;
             }
         }
-    
-        Sequence<T>* result = instance(tempArray, count);
-        if (tempArray) delete[] tempArray;
-        return result;
-    }
-
-    T Reduce(T (*func)(T, const T&), T initial) const override 
-    {
-        T result = initial;
-        int len = GetLength();
-        for (int i = 0; i < len; ++i) 
-        {
-            result = func(result, this->Get(i));
-        }
-        return result;
-    }
-
-    Option<T> GetFirst(bool (*predicate)(const T&)) const override 
-    {
-        return FindElement(predicate, true);
-    }
-
-    Option<T> GetLast(bool (*predicate)(const T&)) const override 
-    {
-        return FindElement(predicate, false);
+        return buildFromArray(tempArray, count);
     }
 
     IEnumerator<T>* GetEnumerator() const override 
@@ -292,7 +283,6 @@ public:
     MutableListSequence() : ListSequenceBase<T>() {}
     MutableListSequence(const MutableListSequence<T>& other) : ListSequenceBase<T>(other) {}
 
-    //Переопределяем методы для модификации текущего объекта
     Sequence<T>* InsertAt(const T& item, int index) override 
     {
         if (index < 0 || index > GetLength()) 
@@ -309,25 +299,16 @@ public:
         {
             throw IndexOutOfRangeException();
         }
-        
-        T* tempArray = new T[GetLength() - 1];
-        for (int i = 0, j = 0; i < GetLength(); ++i) 
-        {
-            if (i != index) 
-            {
-                tempArray[j++] = list->Get(i);
-            }
-        }
-        
-        LinkedList<T>* newList = new LinkedList<T>(tempArray, GetLength() - 1);
-        delete[] tempArray;
-        delete list;
-        list = newList;
+        list->RemoveAt(index);
         return this;
     }
 
     Sequence<T>* Concat(Sequence<T>* other) override 
     {
+        if (!other)
+        {
+            throw InvalidArgumentException();
+        }
         for (int i = 0; i < other->GetLength(); ++i) 
         {
             list->Append(other->Get(i));
