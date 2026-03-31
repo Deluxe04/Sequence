@@ -2,29 +2,35 @@
 #define DYNAMIC_ARRAY_H
 
 #include "exceptions.h"
+#include "iterator.h"
 
 //Всп-ная функция для выделения памяти
 template <class T>
 T* allocateMemory(int size) 
 {
-    if (size < 0) throw InvalidArgumentException("Size cannot be negative");
-    if (size == 0) return nullptr;
-    
-    T* ptr = nullptr;
-    try {
-        ptr = new T[size]();
-    } catch (...) {
-        throw MemoryAllocationException();
+    if (size < 0) 
+    {
+        throw InvalidArgumentException("Size cannot be negative");
     }
-    // Доп. проверка
-    if (ptr == nullptr) {
-        throw MemoryAllocationException();
+
+    if (size == 0)
+    {
+        return nullptr;
+    }
+
+    T* ptr = nullptr;
+    try 
+    {
+        ptr = new T[size]();
+    } catch (...) 
+    {
+        throw MemoryAllocationException("Failed to allocate " + std::string("array"));
     }
     
     return ptr;
 }
 
-// Всп-я функция для освобождения памяти
+//Всп-я функция для освобождения памяти
 template <class T>
 void deallocateMemory(T* ptr) 
 {
@@ -49,25 +55,33 @@ private:
 public:
     DynamicArray(const T* items, int count) : size(count) 
     {
-        if (count < 0) throw InvalidArgumentException("Size cannot be negative");
-        if (count > 0 && items == nullptr) throw InvalidArgumentException("Null pointer provided");
-        
+        if (count < 0) 
+        {
+            throw InvalidArgumentException("Size cannot be negative");
+        }
+        if (count > 0 && items == nullptr) 
+        {
+            throw InvalidArgumentException("Null pointer provided");
+        }
         data = allocateMemory<T>(count);
         copyFrom(items, count);
     }
     
-    // Конструктор создания массива заданной длины
+    //Конструктор создания массива заданной длины
     explicit DynamicArray(int sz) : size(sz) 
     {
-        if (sz < 0) throw InvalidArgumentException("Size cannot be negative");
+        if (sz < 0) 
+        {
+            throw InvalidArgumentException("Size cannot be negative");
+        }
         data = allocateMemory<T>(sz);
     }
     
-    // Копирующий конструктор
+    //Конструктор копирования
     DynamicArray(const DynamicArray<T>& other) : size(other.size) 
     {
         data = allocateMemory<T>(size);
-        copyFrom(other.data, size);
+        if (size > 0) copyFrom(other.data, size);
     }
 
     // Деструктор
@@ -81,20 +95,25 @@ public:
     {
         if (this != &other) 
         {
+            T* newData = allocateMemory<T>(other.size);
+            if (other.size > 0)
+            {
+                for (int i = 0; i < other.size; ++i)
+                    newData[i] = other.data[i];
+            }
             deallocateMemory(data);
+            data = newData;
             size = other.size;
-            data = allocateMemory<T>(size);
-            copyFrom(other.data, size);
         }
         return *this;
     }
 
-    // Декомпозиция (неконстантная версия вызывает константную)
+    //Декомпозиция (неконстантная версия вызывает константную)
     const T& Get(int index) const 
     {
-        if (index < 0 || index >= size) 
+        if (index < 0 || index >= size)
         {
-            throw IndexOutOfRangeException();
+            throw IndexOutOfRangeException("DynamicArray::Get — index out of range");
         }
         return data[index];
     }
@@ -123,20 +142,23 @@ public:
     {
         if (index < 0 || index >= size)
         {
-            throw IndexOutOfRangeException();
+            throw IndexOutOfRangeException("DynamicArray::Set — index out of range");
         }
         data[index] = value;
     }
 
     void Resize(int newSize)
     {
-        if (newSize < 0) throw InvalidArgumentException("New size cannot be negative");
+        if (newSize < 0) 
+        {
+            throw InvalidArgumentException("New size cannot be negative");
+        }
         if (newSize == size) return;
         
         T* newData = allocateMemory<T>(newSize);
         
-        int copySize = (newSize < size) ? newSize : size;
-        for (int i = 0; i < copySize; ++i)
+        int copyCount = (newSize < size) ? newSize : size;
+        for (int i = 0; i < copyCount; ++i)
         {
             newData[i] = data[i];
         }
@@ -146,6 +168,54 @@ public:
         size = newSize;
     }
 
+    IEnumerator<T>* GetEnumerator() const;
 };
+
+//IEnumerator
+template <class T>
+class DynamicArrayEnumerator : public IEnumerator<T> 
+{
+private:
+    const DynamicArray<T>* array;  
+    int currentIndex;               
+
+public:
+    explicit DynamicArrayEnumerator(const DynamicArray<T>* arr)
+        : array(arr), currentIndex(-1) {}
+
+    DynamicArrayEnumerator(const DynamicArrayEnumerator&) = delete;
+    DynamicArrayEnumerator& operator=(const DynamicArrayEnumerator&) = delete;
+
+    bool MoveNext() override
+    {
+        if (!array)
+        {
+            throw ObjectDisposedException("DynamicArrayEnumerator: array was destroyed");
+        }
+        if (currentIndex + 1 < array->GetSize())
+        {
+            ++currentIndex;
+            return true;
+        }
+        return false;
+    }
+
+    const T& Current() const override
+    {
+        if (currentIndex < 0 || currentIndex >= array->GetSize())
+        {
+            throw IndexOutOfRangeException("DynamicArrayEnumerator: iterator out of range");
+        }
+        return array->Get(currentIndex);
+    }
+
+    void Reset() override { currentIndex = -1; }
+};
+
+template <class T>
+IEnumerator<T>* DynamicArray<T>::GetEnumerator() const
+{
+    return new DynamicArrayEnumerator<T>(this);
+}
 
 #endif // DYNAMIC_ARRAY_H
