@@ -8,11 +8,13 @@
 #include "bit_sequence.h"
 #include "adaptive_sequence.h"
 #include "builder.h"
+#include "sequence_operators.h"
 
 
 //Тест-раннер
 static int totalPassed = 0;
 static int totalFailed = 0;
+
 
 void beginSuite(const std::string& name)
 {
@@ -20,6 +22,7 @@ void beginSuite(const std::string& name)
     std::cout << "│  " << name << "\n";
     std::cout << "└─────────────────────────────────────────────\n";
 }
+
 
 void check(const std::string& name, bool condition)
 {
@@ -34,6 +37,7 @@ void check(const std::string& name, bool condition)
         ++totalFailed;
     }
 }
+
 
 template <typename ExceptionType, typename Func>
 void checkThrows(const std::string& name, Func func)
@@ -56,6 +60,7 @@ void checkThrows(const std::string& name, Func func)
     }
 }
 
+
 void printSummary()
 {
     std::cout << "\n═══════════════════════════════════════════════\n";
@@ -64,6 +69,7 @@ void printSummary()
               << ", всего " << (totalPassed + totalFailed) << "\n";
     std::cout << "═══════════════════════════════════════════════\n";
 }
+
 
 //Всп-ые функции для Map/Where/Reduce
 static int    doubleInt(const int& x)          
@@ -77,7 +83,7 @@ static bool   isEven(const int& x)
 }
 
 static int    sumInts(int acc, const int& x)   
-{ 
+{
     return acc + x; 
 }
 
@@ -90,10 +96,16 @@ static std::string toUpper(const std::string& s)
 {
     std::string r = s;
     for (int i = 0; i < (int)r.size(); ++i)
+    {
         if (r[i] >= 'a' && r[i] <= 'z') r[i] = r[i] - 'a' + 'A';
+    }
     return r;
 }
-static bool longWord(const std::string& s) { return (int)s.size() > 4; }
+
+static bool longWord(const std::string& s) 
+{ 
+    return (int)s.size() > 4; 
+}
 
 //Тесты
 void testDynamicArrayInt()
@@ -111,8 +123,8 @@ void testDynamicArrayInt()
     check("Set(2,99)→Get(2)==99", da.Get(2) == 99);
 
     da.Resize(7);
-    check("Resize(7)→size==7",        da.GetSize() == 7);
-    check("Resize(7)→старые данные",  da.Get(1) == 20);
+    check("Resize(7)→size==7",       da.GetSize() == 7);
+    check("Resize(7)→старые данные", da.Get(1) == 20);
 
     da.Resize(3);
     check("Resize(3)→size==3", da.GetSize() == 3);
@@ -127,15 +139,16 @@ void testDynamicArrayInt()
     check("operator=", da.Get(0) == 10);
 
     checkThrows<IndexOutOfRangeException>(
-        "Get(-1)  исключение",       [&]{ da.Get(-1); });
+        "Get(-1) исключение",       [&]{ da.Get(-1); });
     checkThrows<IndexOutOfRangeException>(
-        "Get(100)  исключение",      [&]{ da.Get(100); });
+        "Get(100) исключение",      [&]{ da.Get(100); });
     checkThrows<InvalidArgumentException>(
-        "Resize(-1)  исключение",    [&]{ da.Resize(-1); });
+        "Resize(-1) исключение",    [&]{ da.Resize(-1); });
     checkThrows<InvalidArgumentException>(
-        "DynamicArray(nullptr,3)  исключение",
+        "DynamicArray(nullptr,3) исключение",
         [&]{ DynamicArray<int> bad(nullptr, 3); });
 }
+
 
 void testDynamicArrayString()
 {
@@ -155,6 +168,7 @@ void testDynamicArrayString()
     check("Глубокая копия строк",  da.Get(0) == "apple");
 }
 
+
 void testLinkedListInt()
 {
     beginSuite("LinkedList<int>");
@@ -167,11 +181,11 @@ void testLinkedListInt()
     check("Get(2)==3",       ll.Get(2) == 3);
 
     ll.Append(6);
-    check("Append(6) GetLast()==6",    ll.GetLast() == 6);
-    check("Append(6) GetLength()==6",  ll.GetLength() == 6);
+    check("Append(6) GetLast()==6",   ll.GetLast() == 6);
+    check("Append(6) GetLength()==6", ll.GetLength() == 6);
 
     ll.Prepend(0);
-    check("Prepend(0) GetFirst()==0",  ll.GetFirst() == 0);
+    check("Prepend(0) GetFirst()==0", ll.GetFirst() == 0);
 
     ll.InsertAt(99, 3);
     check("InsertAt(99,3) Get(3)==99", ll.Get(3) == 99);
@@ -189,15 +203,16 @@ void testLinkedListInt()
 
     LinkedList<int> copy(ll);
     copy.Append(777);
-    check("Копирующий конструктор ", ll.GetLength() == 7);
+    check("Копирующий конструктор", ll.GetLength() == 7);
 
     checkThrows<IndexOutOfRangeException>(
-        "Get(-1)  исключение",            [&]{ ll.Get(-1); });
+        "Get(-1) исключение",          [&]{ ll.Get(-1); });
     checkThrows<EmptyStructureException>(
-        "GetFirst() на пустом списке",     [&]{ LinkedList<int> e; e.GetFirst(); });
+        "GetFirst() на пустом списке", [&]{ LinkedList<int> e; e.GetFirst(); });
     checkThrows<EmptyStructureException>(
-        "GetLast() на пустом списке",      [&]{ LinkedList<int> e; e.GetLast(); });
+        "GetLast() на пустом списке",  [&]{ LinkedList<int> e; e.GetLast(); });
 }
+
 
 void testLinkedListString()
 {
@@ -217,6 +232,7 @@ void testLinkedListString()
     ll.RemoveAt(0);
     check("RemoveAt(0)→GetFirst()==\"cat\"", ll.GetFirst() == "cat");
 }
+
 
 void testMutableArraySequenceInt()
 {
@@ -243,12 +259,14 @@ void testMutableArraySequenceInt()
 
     Sequence<int>* sub = seq.GetSubsequence(1, 3);
     check("GetSubsequence(1,3) length==3", sub->GetLength() == 3);
+    std::cout << "  GetSubsequence(1,3) = " << *sub << "\n";
     delete sub;
 
     int arr2[] = {100, 200};
     MutableArraySequence<int> seq2(arr2, 2);
     Sequence<int>* cat = seq.Concat(&seq2);
     check("Concat GetLast()==200", cat->GetLast() == 200);
+    std::cout << "  После Concat = " << *cat << "\n";
     if (cat != &seq) delete cat;
 
     //Map
@@ -256,6 +274,7 @@ void testMutableArraySequenceInt()
     Sequence<int>* mapped = forMap.Map(doubleInt);
     check("Map(*2) Get(0)==20",  mapped->Get(0) == 20);
     check("Map(*2) Get(4)==100", mapped->Get(4) == 100);
+    std::cout << "  Map(*2) = " << *mapped << "\n";
     delete mapped;
 
     //Where
@@ -264,6 +283,7 @@ void testMutableArraySequenceInt()
     Sequence<int>* filtered = forWhere.Where(isEven);
     check("Where(isEven)→length==3", filtered->GetLength() == 3);
     check("Where(isEven)→Get(0)==2", filtered->Get(0) == 2);
+    std::cout << "  Where(isEven) = " << *filtered << "\n";
     delete filtered;
 
     //Reduce
@@ -284,6 +304,7 @@ void testMutableArraySequenceInt()
         [&]{ forReduce.GetSubsequence(-1, 2); });
 }
 
+
 void testImmutableArraySequenceInt()
 {
     beginSuite("ImmutableArraySequence<int>");
@@ -293,15 +314,21 @@ void testImmutableArraySequenceInt()
     check("GetLength()==3", seq.GetLength() == 3);
 
     Sequence<int>* n = seq.Append(4);
-    check("Append новый объект",        n != &seq);
-    check("Append старый length==3",    seq.GetLength() == 3);
-    check("Append новый length==4",     n->GetLength() == 4);
-    check("Append новый GetLast()==4",  n->GetLast() == 4);
+    check("Append новый объект",       n != &seq);
+    check("Append старый length==3",   seq.GetLength() == 3);
+    check("Append новый length==4",    n->GetLength() == 4);
+    check("Append новый GetLast()==4", n->GetLast() == 4);
+
+    ImmutableArraySequence<int> original(arr, 3);
+    check("operator==: старый seq не изменён после Append", seq == original);
+    std::cout << "  Исходная:     " << seq  << "\n";
+    std::cout << "  После Append: " << *n   << "\n";
     delete n;
 
     Sequence<int>* n2 = seq.Prepend(0);
     check("Prepend новый GetFirst()==0", n2->GetFirst() == 0);
     check("Prepend старый не изменён",   seq.GetFirst() == 1);
+    check("operator!=: Prepend создаёт другую seq", seq != *n2);
     delete n2;
 
     Sequence<int>* n3 = seq.RemoveAt(1);
@@ -309,6 +336,7 @@ void testImmutableArraySequenceInt()
     check("RemoveAt→старый length==3", seq.GetLength() == 3);
     delete n3;
 }
+
 
 void testMutableListSequenceInt()
 {
@@ -335,15 +363,24 @@ void testMutableListSequenceInt()
 
     Sequence<int>* mapped = seq.Map(doubleInt);
     check("Map(*2) Get(0)==10", mapped->Get(0) == 10);
+    std::cout << "  Map(*2) = " << *mapped << "\n";
     delete mapped;
 
     int arr2[] = {1, 2, 3, 4};
     MutableListSequence<int> fr(arr2, 4);
     check("Reduce(sum)==10", fr.Reduce(sumInts, 0) == 10);
 
+    MutableListSequence<int> fr2(arr2, 4);
+    check("operator==: две одинаковые ListSequence", fr == fr2);
+    fr.Append(99);
+    check("operator!=: после Append последовательности различны", fr != fr2);
+    std::cout << "  fr  = " << fr  << "\n";
+    std::cout << "  fr2 = " << fr2 << "\n";
+
     checkThrows<IndexOutOfRangeException>(
         "Get(100) исключение", [&]{ seq.Get(100); });
 }
+
 
 void testImmutableListSequenceInt()
 {
@@ -353,9 +390,11 @@ void testImmutableListSequenceInt()
     ImmutableListSequence<int> seq(arr, 3);
 
     Sequence<int>* n = seq.Append(40);
-    check("Append новый объект",      n != &seq);
-    check("Append старый length==3",  seq.GetLength() == 3);
-    check("Append новый length==4",   n->GetLength() == 4);
+    check("Append новый объект",     n != &seq);
+    check("Append старый length==3", seq.GetLength() == 3);
+    check("Append новый length==4",  n->GetLength() == 4);
+    std::cout << "  Старая: " << seq  << "\n";
+    std::cout << "  Новая:  " << *n   << "\n";
     delete n;
 
     Sequence<int>* n2 = seq.RemoveAt(0);
@@ -363,6 +402,7 @@ void testImmutableListSequenceInt()
     check("RemoveAt старый не изменён",    seq.GetFirst() == 10);
     delete n2;
 }
+
 
 void testMutableArraySequenceString()
 {
@@ -387,10 +427,12 @@ void testMutableArraySequenceString()
 
     Sequence<std::string>* mapped = seq.Map(toUpper);
     check("Map(toUpper) Get(0)==\"APPLE\"", mapped->Get(0) == "APPLE");
+    std::cout << "  Map(toUpper) = " << *mapped << "\n";
     delete mapped;
 
     Sequence<std::string>* filtered = seq.Where(longWord);
     check("Where(len>4) length>0", filtered->GetLength() > 0);
+    std::cout << "  Where(len>4) = " << *filtered << "\n";
     delete filtered;
 
     Option<std::string> found = seq.GetFirst(longWord);
@@ -400,8 +442,10 @@ void testMutableArraySequenceString()
     MutableArraySequence<std::string> seq2(arr2, 2);
     Sequence<std::string>* cat = seq.Concat(&seq2);
     check("Concat→GetLast()==\"kiwi\"", cat->GetLast() == "kiwi");
+    std::cout << "  После Concat = " << *cat << "\n";
     if (cat != &seq) delete cat;
 }
+
 
 void testMutableListSequenceString()
 {
@@ -423,8 +467,10 @@ void testMutableListSequenceString()
 
     Sequence<std::string>* mapped = seq.Map(toUpper);
     check("Map(toUpper) Get(0)==\"ZERO\"", mapped->Get(0) == "ZERO");
+    std::cout << "  Map(toUpper) = " << *mapped << "\n";
     delete mapped;
 }
+
 
 void testBitSequence()
 {
@@ -480,6 +526,7 @@ void testBitSequence()
         "Xor с разной длиной исключение", [&]{ bs1.Xor(bs3); });
 }
 
+
 void testAdaptiveSequenceInt()
 {
     beginSuite("AdaptiveSequence<int>");
@@ -489,22 +536,22 @@ void testAdaptiveSequenceInt()
     check("GetLength()==5", seq.GetLength() == 5);
     check("GetFirst()==1",  seq.GetFirst() == 1);
     check("GetLast()==5",   seq.GetLast() == 5);
-    check("Начальная реализация — ArraySequence",
+    check("Начальная реализация",
           std::string(seq.GetImplType()) == "ArraySequence");
 
-    //20 чтений - остаётся ArraySequence
+    std::cout << "  AdaptiveSequence = " << seq << "\n";
+
     for (int i = 0; i < 20; ++i) seq.Get(i % 5);
     check("После 20 чтений ArraySequence",
           std::string(seq.GetImplType()) == "ArraySequence");
 
-    //10 вставок - переключается на ListSequence
     AdaptiveSequence<int> seq2(arr, 5, 5);
     for (int i = 0; i < 10; ++i) seq2.Append(i);
     check("После 10 вставок ListSequence",
           std::string(seq2.GetImplType()) == "ListSequence");
 
-    //Операции работают после переключения
     check("GetLength() после вставок корректен", seq2.GetLength() == 15);
+    std::cout << "  После 10 вставок = " << seq2 << "\n";
 
     Sequence<int>* sub = seq.GetSubsequence(0, 2);
     check("GetSubsequence(0,2) length==3", sub->GetLength() == 3);
@@ -512,6 +559,7 @@ void testAdaptiveSequenceInt()
 
     Sequence<int>* mapped = seq.Map(doubleInt);
     check("Map(*2) Get(0)==2", mapped->Get(0) == 2);
+    std::cout << "  Map(*2) = " << *mapped << "\n";
     delete mapped;
 
     int arr2[] = {1, 2, 3};
@@ -522,10 +570,14 @@ void testAdaptiveSequenceInt()
     copy.Append(100);
     check("Глубокая копия — оригинал не изменён", fr.GetLength() == 3);
 
+    AdaptiveSequence<int> frCopy(arr2, 3);
+    check("operator==: копия == оригинал", fr == frCopy);
+
     checkThrows<IndexOutOfRangeException>(
         "GetSubsequence(-1,2) исключение",
         [&]{ seq.GetSubsequence(-1, 2); });
 }
+
 
 void testBuilders()
 {
@@ -538,11 +590,13 @@ void testBuilders()
     check("ArrayBuilder Mutable length==3",  ma->GetLength() == 3);
     check("ArrayBuilder Mutable Get(0)==10", ma->Get(0) == 10);
     check("ArrayBuilder Mutable Get(2)==30", ma->Get(2) == 30);
+    std::cout << "  ArrayBuilder Mutable = " << *ma << "\n";
     delete ma;
 
     ImmutableArraySequence<int>* ia = ab.BuildImmutable();
     check("ArrayBuilder Immutable→length==3",  ia->GetLength() == 3);
     check("ArrayBuilder Immutable→Get(1)==20", ia->Get(1) == 20);
+    std::cout << "  ArrayBuilder Immutable = " << *ia << "\n";
     delete ia;
 
     ab.Clear();
@@ -560,19 +614,23 @@ void testBuilders()
     check("ListBuilder Mutable→length==4",  ml->GetLength() == 4);
     check("ListBuilder Mutable→Get(0)==1",  ml->Get(0) == 1);
     check("ListBuilder Mutable→Get(3)==4",  ml->Get(3) == 4);
+    std::cout << "  ListBuilder Mutable = " << *ml << "\n";
     delete ml;
 
     ImmutableListSequence<int>* il = lb.BuildImmutable();
     check("ListBuilder Immutable length==4", il->GetLength() == 4);
+    std::cout << "  ListBuilder Immutable = " << *il << "\n";
     delete il;
 
     ArraySequenceBuilder<std::string> sb;
     sb.Add("hello").Add("world");
     MutableArraySequence<std::string>* ss = sb.BuildMutable();
-    check("ArrayBuilder<string> length==2",         ss->GetLength() == 2);
-    check("ArrayBuilder<string> Get(0)==\"hello\"", ss->Get(0) == "hello");
+    check("ArrayBuilder length==2",         ss->GetLength() == 2);
+    check("ArrayBuilder Get(0)==\"hello\"", ss->Get(0) == "hello");
+    std::cout << "  ArrayBuilder<string> = " << *ss << "\n";
     delete ss;
 }
+
 
 void testIterator()
 {
@@ -584,11 +642,11 @@ void testIterator()
     DynamicArray<int> da(arr, 3);
     IEnumerator<int>* it = da.GetEnumerator();
     bool ok = true; int idx = 0;
-    while (it->MoveNext()) 
-    { 
-        if (it->Current() != arr[idx++]) 
+    while (it->MoveNext())
+    {
+        if (it->Current() != arr[idx++])
         {
-            ok = false; 
+            ok = false;
         }
     }
     check("DynamicArray итератор: все элементы", ok && idx == 3);
@@ -600,29 +658,43 @@ void testIterator()
     LinkedList<int> ll(arr, 3);
     IEnumerator<int>* it2 = ll.GetEnumerator();
     ok = true; idx = 0;
-    while (it2->MoveNext()) 
-    { 
-        if (it2->Current() != arr[idx++]) 
+    while (it2->MoveNext())
+    {
+        if (it2->Current() != arr[idx++])
         {
-            ok = false; 
+            ok = false;
         }
     }
     check("LinkedList итератор: все элементы", ok && idx == 3);
     it2->Release();
 
-    // ArraySequence
+    //ArraySequence
     MutableArraySequence<int> seq(arr, 3);
     IEnumerator<int>* it3 = seq.GetEnumerator();
     ok = true; idx = 0;
-    while (it3->MoveNext()) 
-    { 
-        if (it3->Current() != arr[idx++]) 
+    while (it3->MoveNext())
+    {
+        if (it3->Current() != arr[idx++])
         {
-            ok = false; 
+            ok = false;
         }
     }
     check("ArraySequence итератор: все элементы", ok && idx == 3);
     it3->Release();
+
+    //ListSequence
+    MutableListSequence<int> lseq(arr, 3);
+    IEnumerator<int>* it5 = lseq.GetEnumerator();
+    ok = true; idx = 0;
+    while (it5->MoveNext())
+    {
+        if (it5->Current() != arr[idx++])
+        {
+            ok = false;
+        }
+    }
+    check("ListSequence итератор: все элементы", ok && idx == 3);
+    it5->Release();
 
     //Пустая коллекция
     DynamicArray<int> empty(0);
@@ -630,6 +702,7 @@ void testIterator()
     check("Итератор пустой коллекции: MoveNext()==false", !it4->MoveNext());
     it4->Release();
 }
+
 
 void testOption()
 {
@@ -640,9 +713,9 @@ void testOption()
     check("None: operator bool == false",     !((bool)none));
     check("None: GetValueOrDefault(42)==42",  none.GetValueOrDefault(42) == 42);
     checkThrows<InvalidOperationException>(
-        "None: GetValue() → исключение",  [&]{ none.GetValue(); });
+        "None: GetValue() исключение",  [&]{ none.GetValue(); });
     checkThrows<InvalidOperationException>(
-        "None: operator* → исключение",   [&]{ *none; });
+        "None: operator* исключение",   [&]{ *none; });
 
     Option<int> some(99);
     check("Some: HasValue()==true",           some.HasValue());
@@ -658,13 +731,14 @@ void testOption()
     check("Присваивание None: HasValue()==false", !copy.HasValue());
 
     Option<std::string> strOpt(std::string("hello"));
-    check("Option<string>: GetValue()==\"hello\"", strOpt.GetValue() == "hello");
+    check("Option: GetValue()==\"hello\"", strOpt.GetValue() == "hello");
 
     Option<int> a(5), b(5), c(6);
     check("operator==: a==b (оба 5)",    a == b);
     check("operator==: !(a==c) (5≠6)",   !(a == c));
     check("operator==: none==none",       none == Option<int>());
 }
+
 
 int main()
 {
