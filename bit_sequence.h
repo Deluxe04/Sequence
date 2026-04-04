@@ -47,6 +47,12 @@ public:
     }
 };
 
+inline std::ostream& operator<<(std::ostream& os, const Bit& bit)
+{
+    os << static_cast<int>(bit);
+    return os;
+}
+
 class BitSequence : public MutableArraySequence<Bit> 
 {
 protected:
