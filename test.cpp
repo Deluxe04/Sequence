@@ -119,21 +119,21 @@ void testDynamicArrayInt()
 
     DynamicArray<int> copy(da);
     copy.Set(0, 777);
-    check("Копирующий конструктор — глубокая копия", da.Get(0) == 10);
+    check("Копирующий конструктор", da.Get(0) == 10);
 
     DynamicArray<int> assigned(1);
     assigned = da;
     assigned.Set(0, 555);
-    check("operator= — глубокая копия", da.Get(0) == 10);
+    check("operator=", da.Get(0) == 10);
 
     checkThrows<IndexOutOfRangeException>(
-        "Get(-1) → исключение",       [&]{ da.Get(-1); });
+        "Get(-1)  исключение",       [&]{ da.Get(-1); });
     checkThrows<IndexOutOfRangeException>(
-        "Get(100) → исключение",      [&]{ da.Get(100); });
+        "Get(100)  исключение",      [&]{ da.Get(100); });
     checkThrows<InvalidArgumentException>(
-        "Resize(-1) → исключение",    [&]{ da.Resize(-1); });
+        "Resize(-1)  исключение",    [&]{ da.Resize(-1); });
     checkThrows<InvalidArgumentException>(
-        "DynamicArray(nullptr,3) → исключение",
+        "DynamicArray(nullptr,3)  исключение",
         [&]{ DynamicArray<int> bad(nullptr, 3); });
 }
 
@@ -167,20 +167,20 @@ void testLinkedListInt()
     check("Get(2)==3",       ll.Get(2) == 3);
 
     ll.Append(6);
-    check("Append(6)→GetLast()==6",    ll.GetLast() == 6);
-    check("Append(6)→GetLength()==6",  ll.GetLength() == 6);
+    check("Append(6) GetLast()==6",    ll.GetLast() == 6);
+    check("Append(6) GetLength()==6",  ll.GetLength() == 6);
 
     ll.Prepend(0);
-    check("Prepend(0)→GetFirst()==0",  ll.GetFirst() == 0);
+    check("Prepend(0) GetFirst()==0",  ll.GetFirst() == 0);
 
     ll.InsertAt(99, 3);
-    check("InsertAt(99,3)→Get(3)==99", ll.Get(3) == 99);
+    check("InsertAt(99,3) Get(3)==99", ll.Get(3) == 99);
 
     ll.RemoveAt(3);
-    check("RemoveAt(3)→Get(3)==3",     ll.Get(3) == 3);
+    check("RemoveAt(3) Get(3)==3",     ll.Get(3) == 3);
 
     LinkedList<int> sub = ll.GetSubList(1, 3);
-    check("GetSubList(1,3)→length==3", sub.GetLength() == 3);
+    check("GetSubList(1,3) length==3", sub.GetLength() == 3);
 
     int arr2[] = {10, 20};
     LinkedList<int> ll2(arr2, 2);
@@ -189,10 +189,10 @@ void testLinkedListInt()
 
     LinkedList<int> copy(ll);
     copy.Append(777);
-    check("Копирующий конструктор — глубокая копия", ll.GetLength() == 7);
+    check("Копирующий конструктор ", ll.GetLength() == 7);
 
     checkThrows<IndexOutOfRangeException>(
-        "Get(-1) → исключение",            [&]{ ll.Get(-1); });
+        "Get(-1)  исключение",            [&]{ ll.Get(-1); });
     checkThrows<EmptyStructureException>(
         "GetFirst() на пустом списке",     [&]{ LinkedList<int> e; e.GetFirst(); });
     checkThrows<EmptyStructureException>(
@@ -230,32 +230,32 @@ void testMutableArraySequenceInt()
 
     Sequence<int>* r = seq.Append(60);
     check("Mutable Append возвращает this", r == &seq);
-    check("Append(60)→GetLast()==60",       seq.GetLast() == 60);
+    check("Append(60) GetLast()==60",       seq.GetLast() == 60);
 
     seq.Prepend(5);
-    check("Prepend(5)→GetFirst()==5", seq.GetFirst() == 5);
+    check("Prepend(5) GetFirst()==5", seq.GetFirst() == 5);
 
     seq.InsertAt(25, 3);
-    check("InsertAt(25,3)→Get(3)==25", seq.Get(3) == 25);
+    check("InsertAt(25,3) Get(3)==25", seq.Get(3) == 25);
 
     seq.RemoveAt(3);
     check("RemoveAt(3) отработал", seq.GetLength() == 7);
 
     Sequence<int>* sub = seq.GetSubsequence(1, 3);
-    check("GetSubsequence(1,3)→length==3", sub->GetLength() == 3);
+    check("GetSubsequence(1,3) length==3", sub->GetLength() == 3);
     delete sub;
 
     int arr2[] = {100, 200};
     MutableArraySequence<int> seq2(arr2, 2);
     Sequence<int>* cat = seq.Concat(&seq2);
-    check("Concat→GetLast()==200", cat->GetLast() == 200);
+    check("Concat GetLast()==200", cat->GetLast() == 200);
     if (cat != &seq) delete cat;
 
     //Map
     MutableArraySequence<int> forMap(arr, 5);
     Sequence<int>* mapped = forMap.Map(doubleInt);
-    check("Map(*2)→Get(0)==20",  mapped->Get(0) == 20);
-    check("Map(*2)→Get(4)==100", mapped->Get(4) == 100);
+    check("Map(*2) Get(0)==20",  mapped->Get(0) == 20);
+    check("Map(*2) Get(4)==100", mapped->Get(4) == 100);
     delete mapped;
 
     //Where
@@ -277,10 +277,10 @@ void testMutableArraySequenceInt()
     check("GetFirst(isPositive)==1",         found.GetValue() == 1);
 
     checkThrows<IndexOutOfRangeException>(
-        "Get(-1) → исключение",
+        "Get(-1) исключение",
         [&]{ forReduce.Get(-1); });
     checkThrows<IndexOutOfRangeException>(
-        "GetSubsequence(-1,2) → исключение",
+        "GetSubsequence(-1,2) исключение",
         [&]{ forReduce.GetSubsequence(-1, 2); });
 }
 
@@ -293,15 +293,15 @@ void testImmutableArraySequenceInt()
     check("GetLength()==3", seq.GetLength() == 3);
 
     Sequence<int>* n = seq.Append(4);
-    check("Append→новый объект",        n != &seq);
-    check("Append→старый length==3",    seq.GetLength() == 3);
-    check("Append→новый length==4",     n->GetLength() == 4);
-    check("Append→новый GetLast()==4",  n->GetLast() == 4);
+    check("Append новый объект",        n != &seq);
+    check("Append старый length==3",    seq.GetLength() == 3);
+    check("Append новый length==4",     n->GetLength() == 4);
+    check("Append новый GetLast()==4",  n->GetLast() == 4);
     delete n;
 
     Sequence<int>* n2 = seq.Prepend(0);
-    check("Prepend→новый GetFirst()==0", n2->GetFirst() == 0);
-    check("Prepend→старый не изменён",   seq.GetFirst() == 1);
+    check("Prepend новый GetFirst()==0", n2->GetFirst() == 0);
+    check("Prepend старый не изменён",   seq.GetFirst() == 1);
     delete n2;
 
     Sequence<int>* n3 = seq.RemoveAt(1);
@@ -322,19 +322,19 @@ void testMutableListSequenceInt()
 
     Sequence<int>* r = seq.Append(25);
     check("Mutable Append возвращает this", r == &seq);
-    check("Append(25)→GetLast()==25",       seq.GetLast() == 25);
+    check("Append(25) GetLast()==25",       seq.GetLast() == 25);
 
     seq.Prepend(0);
-    check("Prepend(0)→GetFirst()==0", seq.GetFirst() == 0);
+    check("Prepend(0) GetFirst()==0", seq.GetFirst() == 0);
 
     seq.InsertAt(12, 3);
-    check("InsertAt(12,3)→Get(3)==12", seq.Get(3) == 12);
+    check("InsertAt(12,3) Get(3)==12", seq.Get(3) == 12);
 
     seq.RemoveAt(0);
-    check("RemoveAt(0)→GetFirst()==5", seq.GetFirst() == 5);
+    check("RemoveAt(0) GetFirst()==5", seq.GetFirst() == 5);
 
     Sequence<int>* mapped = seq.Map(doubleInt);
-    check("Map(*2)→Get(0)==10", mapped->Get(0) == 10);
+    check("Map(*2) Get(0)==10", mapped->Get(0) == 10);
     delete mapped;
 
     int arr2[] = {1, 2, 3, 4};
@@ -342,7 +342,7 @@ void testMutableListSequenceInt()
     check("Reduce(sum)==10", fr.Reduce(sumInts, 0) == 10);
 
     checkThrows<IndexOutOfRangeException>(
-        "Get(100) → исключение", [&]{ seq.Get(100); });
+        "Get(100) исключение", [&]{ seq.Get(100); });
 }
 
 void testImmutableListSequenceInt()
@@ -353,14 +353,14 @@ void testImmutableListSequenceInt()
     ImmutableListSequence<int> seq(arr, 3);
 
     Sequence<int>* n = seq.Append(40);
-    check("Append→новый объект",      n != &seq);
-    check("Append→старый length==3",  seq.GetLength() == 3);
-    check("Append→новый length==4",   n->GetLength() == 4);
+    check("Append новый объект",      n != &seq);
+    check("Append старый length==3",  seq.GetLength() == 3);
+    check("Append новый length==4",   n->GetLength() == 4);
     delete n;
 
     Sequence<int>* n2 = seq.RemoveAt(0);
     check("RemoveAt→новый GetFirst()==20", n2->GetFirst() == 20);
-    check("RemoveAt→старый не изменён",    seq.GetFirst() == 10);
+    check("RemoveAt старый не изменён",    seq.GetFirst() == 10);
     delete n2;
 }
 
@@ -374,23 +374,23 @@ void testMutableArraySequenceString()
     check("GetLast()==\"elderberry\"",   seq.GetLast() == "elderberry");
 
     seq.Append("fig");
-    check("Append→GetLast()==\"fig\"",   seq.GetLast() == "fig");
+    check("Append GetLast()==\"fig\"",   seq.GetLast() == "fig");
 
     seq.Prepend("apricot");
-    check("Prepend→GetFirst()==\"apricot\"", seq.GetFirst() == "apricot");
+    check("Prepend GetFirst()==\"apricot\"", seq.GetFirst() == "apricot");
 
     seq.InsertAt("blueberry", 2);
-    check("InsertAt→Get(2)==\"blueberry\"",  seq.Get(2) == "blueberry");
+    check("InsertAt Get(2)==\"blueberry\"",  seq.Get(2) == "blueberry");
 
     seq.RemoveAt(0);
-    check("RemoveAt(0)→GetFirst()==\"apple\"", seq.GetFirst() == "apple");
+    check("RemoveAt(0) GetFirst()==\"apple\"", seq.GetFirst() == "apple");
 
     Sequence<std::string>* mapped = seq.Map(toUpper);
-    check("Map(toUpper)→Get(0)==\"APPLE\"", mapped->Get(0) == "APPLE");
+    check("Map(toUpper) Get(0)==\"APPLE\"", mapped->Get(0) == "APPLE");
     delete mapped;
 
     Sequence<std::string>* filtered = seq.Where(longWord);
-    check("Where(len>4)→length>0", filtered->GetLength() > 0);
+    check("Where(len>4) length>0", filtered->GetLength() > 0);
     delete filtered;
 
     Option<std::string> found = seq.GetFirst(longWord);
@@ -413,16 +413,16 @@ void testMutableListSequenceString()
     check("GetLast()==\"three\"",  seq.GetLast() == "three");
 
     seq.Append("four");
-    check("Append→GetLast()==\"four\"",  seq.GetLast() == "four");
+    check("Append GetLast()==\"four\"",  seq.GetLast() == "four");
 
     seq.Prepend("zero");
-    check("Prepend→GetFirst()==\"zero\"", seq.GetFirst() == "zero");
+    check("Prepend GetFirst()==\"zero\"", seq.GetFirst() == "zero");
 
     seq.RemoveAt(seq.GetLength() - 1);
-    check("RemoveAt(last)→GetLast()==\"three\"", seq.GetLast() == "three");
+    check("RemoveAt(last) GetLast()==\"three\"", seq.GetLast() == "three");
 
     Sequence<std::string>* mapped = seq.Map(toUpper);
-    check("Map(toUpper)→Get(0)==\"ZERO\"", mapped->Get(0) == "ZERO");
+    check("Map(toUpper) Get(0)==\"ZERO\"", mapped->Get(0) == "ZERO");
     delete mapped;
 }
 
@@ -440,10 +440,10 @@ void testBitSequence()
 
     //NOT
     BitSequence* bsNot = bs1.Not();
-    check("NOT[0]: 1→0", bsNot->Get(0).getValue() == false);
-    check("NOT[1]: 0→1", bsNot->Get(1).getValue() == true);
-    check("NOT[2]: 1→0", bsNot->Get(2).getValue() == false);
-    check("NOT[3]: 1→0", bsNot->Get(3).getValue() == false);
+    check("NOT[0]: 1 в 0", bsNot->Get(0).getValue() == false);
+    check("NOT[1]: 0 в 1", bsNot->Get(1).getValue() == true);
+    check("NOT[2]: 1 в 0", bsNot->Get(2).getValue() == false);
+    check("NOT[3]: 1 в 0", bsNot->Get(3).getValue() == false);
     delete bsNot;
 
     //AND
@@ -473,11 +473,11 @@ void testBitSequence()
     Bit b3[] = {Bit(1), Bit(0)};
     BitSequence bs3(b3, 2);
     checkThrows<InvalidArgumentException>(
-        "And с разной длиной → исключение", [&]{ bs1.And(bs3); });
+        "And с разной длиной исключение", [&]{ bs1.And(bs3); });
     checkThrows<InvalidArgumentException>(
-        "Or с разной длиной → исключение",  [&]{ bs1.Or(bs3); });
+        "Or с разной длиной исключение",  [&]{ bs1.Or(bs3); });
     checkThrows<InvalidArgumentException>(
-        "Xor с разной длиной → исключение", [&]{ bs1.Xor(bs3); });
+        "Xor с разной длиной исключение", [&]{ bs1.Xor(bs3); });
 }
 
 void testAdaptiveSequenceInt()
@@ -494,24 +494,24 @@ void testAdaptiveSequenceInt()
 
     //20 чтений - остаётся ArraySequence
     for (int i = 0; i < 20; ++i) seq.Get(i % 5);
-    check("После 20 чтений → ArraySequence",
+    check("После 20 чтений ArraySequence",
           std::string(seq.GetImplType()) == "ArraySequence");
 
     //10 вставок - переключается на ListSequence
     AdaptiveSequence<int> seq2(arr, 5, 5);
     for (int i = 0; i < 10; ++i) seq2.Append(i);
-    check("После 10 вставок → ListSequence",
+    check("После 10 вставок ListSequence",
           std::string(seq2.GetImplType()) == "ListSequence");
 
     //Операции работают после переключения
     check("GetLength() после вставок корректен", seq2.GetLength() == 15);
 
     Sequence<int>* sub = seq.GetSubsequence(0, 2);
-    check("GetSubsequence(0,2)→length==3", sub->GetLength() == 3);
+    check("GetSubsequence(0,2) length==3", sub->GetLength() == 3);
     delete sub;
 
     Sequence<int>* mapped = seq.Map(doubleInt);
-    check("Map(*2)→Get(0)==2", mapped->Get(0) == 2);
+    check("Map(*2) Get(0)==2", mapped->Get(0) == 2);
     delete mapped;
 
     int arr2[] = {1, 2, 3};
@@ -523,7 +523,7 @@ void testAdaptiveSequenceInt()
     check("Глубокая копия — оригинал не изменён", fr.GetLength() == 3);
 
     checkThrows<IndexOutOfRangeException>(
-        "GetSubsequence(-1,2) → исключение",
+        "GetSubsequence(-1,2) исключение",
         [&]{ seq.GetSubsequence(-1, 2); });
 }
 
@@ -535,9 +535,9 @@ void testBuilders()
     ab.Add(10).Add(20).Add(30);
 
     MutableArraySequence<int>* ma = ab.BuildMutable();
-    check("ArrayBuilder Mutable→length==3",  ma->GetLength() == 3);
-    check("ArrayBuilder Mutable→Get(0)==10", ma->Get(0) == 10);
-    check("ArrayBuilder Mutable→Get(2)==30", ma->Get(2) == 30);
+    check("ArrayBuilder Mutable length==3",  ma->GetLength() == 3);
+    check("ArrayBuilder Mutable Get(0)==10", ma->Get(0) == 10);
+    check("ArrayBuilder Mutable Get(2)==30", ma->Get(2) == 30);
     delete ma;
 
     ImmutableArraySequence<int>* ia = ab.BuildImmutable();
@@ -563,14 +563,14 @@ void testBuilders()
     delete ml;
 
     ImmutableListSequence<int>* il = lb.BuildImmutable();
-    check("ListBuilder Immutable→length==4", il->GetLength() == 4);
+    check("ListBuilder Immutable length==4", il->GetLength() == 4);
     delete il;
 
     ArraySequenceBuilder<std::string> sb;
     sb.Add("hello").Add("world");
     MutableArraySequence<std::string>* ss = sb.BuildMutable();
-    check("ArrayBuilder<string>→length==2",         ss->GetLength() == 2);
-    check("ArrayBuilder<string>→Get(0)==\"hello\"", ss->Get(0) == "hello");
+    check("ArrayBuilder<string> length==2",         ss->GetLength() == 2);
+    check("ArrayBuilder<string> Get(0)==\"hello\"", ss->Get(0) == "hello");
     delete ss;
 }
 
