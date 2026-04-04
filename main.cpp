@@ -9,8 +9,9 @@
 #include "bit_sequence.h"
 #include "adaptive_sequence.h"
 #include "builder.h"
+#include "sequence_operators.h"
 
-// Вспомогательные функции
+//Вспомогательные функции
 template <class T>
 int readArray(T* arr, int maxSize)
 {
@@ -68,35 +69,12 @@ bool readInt(int& val)
 template <class T>
 void printSequence(const Sequence<T>* seq, const char* name)
 {
-    if (!seq) 
-    { 
-        std::cout << name << " is null\n"; 
-        return; 
-    }
-    std::cout << name << " (len=" << seq->GetLength() << "): [";
-    for (int i = 0; i < seq->GetLength(); ++i)
+    if (!seq)
     {
-        if (i > 0) std::cout << ", ";
-        std::cout << seq->Get(i);
+        std::cout << name << " is null\n";
+        return;
     }
-    std::cout << "]\n";
-}
-
-template <>
-void printSequence<Bit>(const Sequence<Bit>* seq, const char* name)
-{
-    if (!seq) 
-    { 
-        std::cout << name << " is null\n"; 
-        return; 
-    }
-    std::cout << name << " (len=" << seq->GetLength() << "): [";
-    for (int i = 0; i < seq->GetLength(); ++i)
-    {
-        if (i > 0) std::cout << ", ";
-        std::cout << (seq->Get(i) ? '1' : '0');
-    }
-    std::cout << "]\n";
+    std::cout << name << " (len=" << seq->GetLength() << "): " << *seq << "\n";
 }
 
 template <>
@@ -395,7 +373,10 @@ void runInteractive()
             printMenu();
             choice = -1;
             readInt(choice);
-            if (choice == -1) continue;
+            if (choice == -1) 
+            {
+                continue;
+            }
 
             //Создание int
             if (choice >= 1 && choice <= 4)
