@@ -48,39 +48,73 @@ private:
         SwitchTo<MutableListSequence<T>>();
     }
     
-    void Rebalance()
+    //Общий метод для всех модифицирующих операций
+    template <typename Operation>
+    bool ExecuteModify(Operation&& op)
     {
-        int total = getCount + insertCount;
-        if (total == 0) 
+        ++insertCount;
+        
+        Sequence<T>* newImpl = op();
+        
+        if (newImpl == nullptr)
         {
-            return;
+            throw InvalidOperationException("Operation returned nullptr");
         }
-
-        if (getCount * 100 / total > 70)
+        bool wasReplaced = (newImpl != impl);
+        
+        if (wasReplaced)
         {
-            SwitchToArray();
+            Sequence<T>* oldImpl = impl;
+            impl = newImpl;      
+            delete oldImpl;      
         }
-        else if (insertCount * 100 / total > 50)
+    
+        if (insertCount > threshold)
         {
-            SwitchToList();
+            Rebalance();
         }
         
-        getCount = 0;
-        insertCount = 0;
+        return wasReplaced;
     }
 
-    //Увеличивает счётчик чтений
-    template <typename Func>
-    const T& Access(Func func) const
+    void Rebalance() noexcept
+    {
+        try
+        {
+            int total = getCount + insertCount;
+            if (total == 0) return;
+            
+            // Проверяем, нужно ли переключение
+            bool needArray = (getCount * 100 / total > 70);
+            bool needList = (insertCount * 100 / total > 50);
+            
+            if (needArray && dynamic_cast<MutableArraySequence<T>*>(impl) == nullptr)
+            {
+                SwitchToArray();
+            }
+            else if (needList && dynamic_cast<MutableListSequence<T>*>(impl) == nullptr)
+            {
+                SwitchToList();
+            }
+            
+            getCount = 0;
+            insertCount = 0;
+        }
+        catch (...)
+        {
+        }
+    }
+
+    //Метод для чтения операций
+    void OnRead() const
     {
         ++getCount;
-        if (getCount > threshold)
+        //Проверяем каждые 100 операций
+        if ((getCount + insertCount) >= threshold)
         {
             const_cast<AdaptiveSequence<T>*>(this)->Rebalance();
         }
-
-        return func();
-    }
+    }    
 
 public:
     explicit AdaptiveSequence(int t = 100) : impl(new MutableArraySequence<T>()),
@@ -109,17 +143,20 @@ public:
     // Декомпозиция
     const T& GetFirst() const override
     {
-        return Access([this]() -> const T& { return impl->GetFirst(); });
+        OnRead();
+        return impl->GetFirst();
     }
     
     const T& GetLast() const override
     {
-        return Access([this]() -> const T& { return impl->GetLast(); });
+        OnRead();
+        return impl->GetLast();
     }
     
     const T& Get(int index) const override
     {
-        return Access([this, index]() -> const T& { return impl->Get(index); });
+        OnRead();
+        return impl->Get(index);
     }
     
     int GetLength() const override
@@ -150,59 +187,51 @@ public:
     
     Sequence<T>* Append(const T& item) override
     {
-        ++insertCount;
-        impl->Append(item);
-        if (insertCount > threshold)
+        ExecuteModify([this, &item]() -> Sequence<T>* 
         {
-            Rebalance();
-        }
+            return impl->Append(item);
+        });
         return this;
     }
 
     Sequence<T>* Prepend(const T& item) override
     {
-        ++insertCount;
-        impl->Prepend(item);
-        if (insertCount > threshold)
+        ExecuteModify([this, &item]() -> Sequence<T>* 
         {
-            Rebalance();
-        }
+            return impl->Prepend(item);
+        });
         return this;
     }
 
     Sequence<T>* InsertAt(const T& item, int index) override
     {
-        ++insertCount;
-        impl->InsertAt(item, index);
-        if (insertCount > threshold)
+        ExecuteModify([this, &item, index]() -> Sequence<T>* 
         {
-            Rebalance();
-        }
+            return impl->InsertAt(item, index);
+        });
         return this;
     }
 
     Sequence<T>* RemoveAt(int index) override
     {
-        ++insertCount;
-        impl->RemoveAt(index);
-        if (insertCount > threshold)
+        ExecuteModify([this, index]() -> Sequence<T>* 
         {
-            Rebalance();
-        }
+            return impl->RemoveAt(index);
+        });
         return this;
     }
     
     Sequence<T>* Concat(Sequence<T>* other) override
     {
+        if (!other) throw InvalidArgumentException();
+        
         int otherLen = other->GetLength();
         for (int i = 0; i < otherLen; ++i)
         {
-            ++insertCount;
-            impl->Append(other->Get(i));
-            if (insertCount > threshold)
+            ExecuteModify([this, other, i]() -> Sequence<T>* 
             {
-                Rebalance();
-            }
+                return impl->Append(other->Get(i));
+            });
         }
         return this;
     }
